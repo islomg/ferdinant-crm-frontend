@@ -1,0 +1,2959 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+{% load static %}
+
+<head>
+    <title>Ferdinant Edu CRM</title>
+
+    <link rel="icon" type="image/png" href="{% static 'images/logo.png' %}?v=1">
+    <script src="auth-guard.js"></script>
+</head>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600;700&family=Geist+Mono:wght@400;500&family=Inter:opsz,wght@14..32,300;14..32,400;14..32,600;14..32,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
+          rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        :root {
+            --bg: #06080f;
+            --bg2: #0d1117;
+            --bg3: #111827;
+            --card: rgba(17, 24, 39, 0.8);
+            --border: rgba(255, 255, 255, 0.06);
+            --border2: rgba(255, 255, 255, 0.12);
+            --accent: #3b82f6;
+            --accent2: #6366f1;
+            --green: #10b981;
+            --red: #ef4444;
+            --amber: #f59e0b;
+            --text1: #f1f5f9;
+            --text2: #94a3b8;
+            --text3: #475569;
+            --sidebar-w: 260px;
+            --radius: 12px;
+            --radius-lg: 18px;
+            --font: 'Geist', -apple-system, sans-serif;
+            --mono: 'Geist Mono', monospace;
+        }
+
+        html, body {
+            height: 100%;
+            overflow: hidden
+        }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--text1);
+            display: flex
+        }
+
+        ::-webkit-scrollbar {
+            width: 4px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--border2);
+            border-radius: 4px
+        }
+
+        .sidebar {
+            width: var(--sidebar-w);
+            flex-shrink: 0;
+            background: var(--bg2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            transition: transform .25s ease;
+            z-index: 200;
+        }
+
+        .sidebar-logo {
+            padding: 24px 20px 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            /*background: linear-gradient(135deg, var(--accent), var(--accent2));*/
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            color: #fff;
+            flex-shrink: 0;
+        }
+
+        .logo-icon img {
+            width: 40px;
+            height: 40px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        .logo-text {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text1)
+        }
+
+        .logo-text span {
+            color: var(--accent)
+        }
+
+        .close-btn {
+            margin-left: auto;
+            background: none;
+            border: none;
+            color: var(--text3);
+            cursor: pointer;
+            font-size: 20px;
+            display: none;
+            padding: 4px;
+            transition: color .2s;
+        }
+
+        .close-btn:hover {
+            color: var(--red)
+        }
+
+        nav {
+            flex: 1;
+            padding: 12px 10px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 2px
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            color: var(--text2);
+            font-size: 14px;
+            font-weight: 500;
+            transition: all .18s;
+            white-space: nowrap;
+            user-select: none;
+        }
+
+        .nav-item i {
+            width: 18px;
+            text-align: center;
+            font-size: 15px;
+            transition: transform .18s
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text1)
+        }
+
+        .nav-item:hover i {
+            transform: translateX(2px)
+        }
+
+        .nav-item.active {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--accent);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .nav-badge {
+            margin-left: auto;
+            background: var(--red);
+            color: #fff;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 20px;
+        }
+
+        .sidebar-footer {
+            padding: 12px 10px 16px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--text3);
+            text-align: center;
+        }
+
+        .main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden
+        }
+
+        .topbar {
+            height: 60px;
+            flex-shrink: 0;
+            background: var(--bg2);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 0 24px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: 1px solid var(--border2);
+            color: var(--text2);
+            font-size: 18px;
+            cursor: pointer;
+            border-radius: 8px;
+            padding: 6px 10px;
+            transition: .2s;
+            display: none;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255, 255, 255, .06);
+            color: var(--text1)
+        }
+
+        .topbar-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--text1)
+        }
+
+        .topbar-actions {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 10px
+        }
+
+        .topbar-stat {
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.15);
+            border-radius: 8px;
+            padding: 5px 12px;
+            font-size: 12px;
+            color: var(--accent);
+            font-family: var(--mono);
+        }
+
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns:repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin-bottom: 20px
+        }
+
+        .stat-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            transition: border-color .2s, transform .2s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::after {
+            content: '';
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.04;
+        }
+
+        .stat-card:hover {
+            border-color: var(--border2);
+            transform: translateY(-2px)
+        }
+
+        .stat-icon {
+            font-size: 20px;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .stat-icon.blue {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--accent)
+        }
+
+        .stat-icon.green {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--green)
+        }
+
+        .stat-icon.red {
+            background: rgba(239, 68, 68, 0.12);
+            color: var(--red)
+        }
+
+        .stat-icon.amber {
+            background: rgba(245, 158, 11, 0.12);
+            color: var(--amber)
+        }
+
+        .stat-icon.purple {
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--accent2)
+        }
+
+        .stat-val {
+            font-size: 26px;
+            font-weight: 700;
+            color: var(--text1);
+            font-family: var(--mono);
+            line-height: 1
+        }
+
+        .stat-val.sm {
+            font-size: 18px
+        }
+
+        .stat-lbl {
+            font-size: 12px;
+            color: var(--text2)
+        }
+
+        .filter-bar {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 14px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        input, select, textarea {
+            font-family: var(--font);
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            color: var(--text1);
+            padding: 8px 12px;
+            font-size: 13px;
+            outline: none;
+            transition: border-color .18s, box-shadow .18s;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+
+        input::placeholder {
+            color: var(--text3)
+        }
+
+        select option {
+            background: #1e293b;
+            color: var(--text1)
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all .18s;
+            border: 1px solid transparent;
+            font-family: var(--font);
+            white-space: nowrap;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        .btn-primary:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3)
+        }
+
+        .btn-ghost {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text2);
+            border-color: var(--border2)
+        }
+
+        .btn-ghost:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text1)
+        }
+
+        .btn-ghost.active {
+            background: rgba(59, 130, 246, 0.12);
+            color: var(--accent);
+            border-color: rgba(59, 130, 246, 0.3)
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--red);
+            border-color: rgba(239, 68, 68, 0.25)
+        }
+
+        .btn-danger:hover {
+            background: var(--red);
+            color: #fff
+        }
+
+        .btn-warning {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--amber);
+            border-color: rgba(245, 158, 11, 0.25)
+        }
+
+        .btn-warning:hover {
+            background: var(--amber);
+            color: #fff
+        }
+
+        .btn-success {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green);
+            border-color: rgba(16, 185, 129, 0.25)
+        }
+
+        .btn-success:hover {
+            background: var(--green);
+            color: #fff
+        }
+
+        .btn-sm {
+            padding: 5px 11px;
+            font-size: 12px
+        }
+
+        .btn:active {
+            transform: scale(0.97)
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600
+        }
+
+        .badge-paid {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3)
+        }
+
+        .badge-debt {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3)
+        }
+
+        .badge-partial {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3)
+        }
+
+        .groups-grid {
+            display: grid;
+            grid-template-columns:repeat(auto-fill, minmax(290px, 1fr));
+            gap: 16px
+        }
+
+        .group-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            cursor: pointer;
+            transition: all .2s;
+            position: relative;
+        }
+
+        .group-card:hover {
+            border-color: rgba(59, 130, 246, 0.35);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3)
+        }
+
+        .group-card-head {
+            padding: 14px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .group-card-body {
+            padding: 14px 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px
+        }
+
+        .group-meta {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--text2)
+        }
+
+        .group-meta i {
+            width: 14px;
+            text-align: center;
+            color: var(--accent);
+            font-size: 12px
+        }
+
+        .group-progress {
+            height: 4px;
+            background: var(--border2);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 4px
+        }
+
+        .group-progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            transition: width .4s
+        }
+
+        .student-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: border-color .18s;
+        }
+
+        .student-item:hover {
+            border-color: var(--border2)
+        }
+
+        .student-avatar {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 700;
+            flex-shrink: 0;
+            font-family: var(--mono);
+        }
+
+        .student-info {
+            flex: 1;
+            min-width: 0
+        }
+
+        .student-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text1);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .student-sub {
+            font-size: 12px;
+            color: var(--text2);
+            margin-top: 2px
+        }
+
+        .student-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0
+        }
+
+        .pay-item {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 12px 14px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: border-color .18s;
+        }
+
+        .pay-item:hover {
+            border-color: var(--border2)
+        }
+
+        .pay-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            flex-shrink: 0
+        }
+
+        .pay-info {
+            flex: 1;
+            min-width: 0
+        }
+
+        .pay-name {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text1)
+        }
+
+        .pay-date {
+            font-size: 11px;
+            color: var(--text2);
+            margin-top: 2px
+        }
+
+        .pay-sub {
+            font-size: 11px;
+            color: var(--text3);
+            margin-top: 4px
+        }
+
+        .pay-amount {
+            font-size: 14px;
+            font-weight: 700;
+            font-family: var(--mono);
+            color: var(--green);
+            flex-shrink: 0
+        }
+
+        .pay-actions {
+            display: flex;
+            gap: 6px;
+            flex-shrink: 0
+        }
+
+        .chart-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text2);
+            text-transform: uppercase;
+            letter-spacing: .06em;
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .section-title::before {
+            content: '';
+            width: 3px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 2px;
+            display: inline-block
+        }
+
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(6px);
+            z-index: 500;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-backdrop.open {
+            display: flex
+        }
+
+        .modal-box {
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 20px;
+            padding: 24px;
+            width: 92%;
+            max-width: 440px;
+            animation: modalIn .22s ease;
+        }
+
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(.95) translateY(8px)
+            }
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .modal-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: var(--text1);
+            margin-bottom: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px
+        }
+
+        .modal-title i {
+            color: var(--accent)
+        }
+
+        .form-group {
+            margin-bottom: 12px
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text2);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: .05em
+        }
+
+        .form-group input, .form-group select {
+            width: 100%
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 18px
+        }
+
+        .modal-actions .btn {
+            flex: 1;
+            justify-content: center
+        }
+
+        .pagination {
+            display: flex;
+            gap: 4px;
+            justify-content: center;
+            margin-top: 16px;
+            flex-wrap: wrap
+        }
+
+        .page-btn {
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text2);
+            background: transparent;
+            transition: .15s;
+            font-family: var(--font);
+        }
+
+        .page-btn:hover {
+            background: rgba(255, 255, 255, .06);
+            color: var(--text1)
+        }
+
+        .page-btn.active {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent)
+        }
+
+        .dd-wrap {
+            position: relative
+        }
+
+        .dd-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 6px);
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            padding: 4px;
+            min-width: 160px;
+            z-index: 300;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+            animation: modalIn .15s ease;
+        }
+
+        .dd-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 10px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text2);
+            transition: .15s;
+            background: none;
+            border: none;
+            width: 100%;
+            text-align: left;
+            font-family: var(--font);
+        }
+
+        .dd-item:hover {
+            background: rgba(255, 255, 255, .06);
+            color: var(--text1)
+        }
+
+        .dd-item.red:hover {
+            background: rgba(239, 68, 68, .1);
+            color: var(--red)
+        }
+
+        .empty {
+            text-align: center;
+            padding: 48px 24px;
+            color: var(--text3)
+        }
+
+        .empty i {
+            font-size: 40px;
+            margin-bottom: 12px;
+            display: block
+        }
+
+        .empty p {
+            font-size: 14px
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, .6);
+            z-index: 100
+        }
+
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            align-items: center
+        }
+
+        .toast {
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-size: 13px;
+            color: var(--text1);
+            animation: toastIn .2s ease;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .4);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px)
+            }
+            to {
+                opacity: 1;
+                transform: none
+            }
+        }
+
+        .toast.success {
+            border-color: rgba(16, 185, 129, .3)
+        }
+
+        .toast.error {
+            border-color: rgba(239, 68, 68, .3)
+        }
+
+        .toast i {
+            font-size: 14px
+        }
+
+        .toast.success i {
+            color: var(--green)
+        }
+
+        .toast.error i {
+            color: var(--red)
+        }
+
+        .detail-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .detail-back {
+            cursor: pointer;
+            color: var(--text2);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            transition: color .15s
+        }
+
+        .detail-back:hover {
+            color: var(--accent)
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                transition: transform .25s
+            }
+
+            .sidebar.open {
+                transform: none
+            }
+
+            .close-btn {
+                display: block
+            }
+
+            .menu-btn {
+                display: block
+            }
+
+            .overlay {
+                display: block;
+                pointer-events: none;
+                opacity: 0;
+                transition: .25s
+            }
+
+            .sidebar.open ~ .overlay, .overlay.show {
+                opacity: 1;
+                pointer-events: auto
+            }
+
+            .content {
+                padding: 14px
+            }
+
+            .stats-row {
+                grid-template-columns:1fr 1fr
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-row {
+                grid-template-columns:1fr
+            }
+
+            .groups-grid {
+                grid-template-columns:1fr
+            }
+        }
+
+        /* Test panel stillari */
+        .test-container, .cert-container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            position: relative;
+        }
+
+        .test-card-panel {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border-radius: 40px;
+            border: 1px solid rgba(71, 85, 105, 0.4);
+            box-shadow: 0 25px 45px -12px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .test-card-header {
+            padding: 20px 28px;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+            background: rgba(15, 23, 42, 0.6);
+            border-radius: 40px 40px 0 0;
+        }
+
+        .test-option-item {
+            background: rgba(21, 31, 52, 0.8);
+            border: 1px solid #334155;
+            border-radius: 60px;
+            padding: 14px 24px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.2s;
+            font-weight: 500;
+            color: #E2E8F0;
+        }
+
+        .test-option-item:hover:not(.disabled) {
+            background: #1E293B;
+            border-color: #3B82F6;
+            transform: translateX(6px);
+        }
+
+        .test-option-item.correct {
+            background: #064E3B;
+            border-color: #10B981;
+            color: #D1FAE5;
+        }
+
+        .test-option-item.incorrect {
+            background: #7F1D1D;
+            border-color: #EF4444;
+            color: #FEE2E2;
+        }
+
+        .test-option-item.disabled {
+            pointer-events: none;
+            opacity: 0.85;
+        }
+
+        .test-timer-modern {
+            background: #1E293B;
+            padding: 6px 18px;
+            border-radius: 60px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .test-progress-bar {
+            height: 4px;
+            background: #1E293B;
+            width: 100%;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .test-progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #3B82F6, #38BDF8);
+            transition: width 0.1s linear;
+        }
+
+        .next-btn {
+            background: #2563EB;
+            border: none;
+            padding: 10px 32px;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        .next-btn.active-next {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Sertifikat kengligi kattaroq */
+        .cert-form-container {
+            background: rgba(15, 25, 45, 0.75);
+            backdrop-filter: blur(12px);
+            border-radius: 2rem;
+            padding: 2rem;
+            width: 100%;
+            max-width: 850px;
+            margin: 0 auto;
+            border: 1px solid rgba(72, 120, 255, 0.35);
+            box-shadow: 0 25px 45px rgba(0, 0, 0, 0.4);
+        }
+
+        .cert-submit-btn {
+            background: linear-gradient(105deg, #1e2a5e, #19224b);
+            border: none;
+            border-radius: 40px;
+            padding: 14px 24px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: 0.25s;
+            width: 100%;
+        }
+
+        .cert-submit-btn:hover {
+            background: linear-gradient(105deg, #2c3d77, #212e60);
+            transform: translateY(-2px);
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(4px);
+            margin-bottom: 16px;
+            padding: 14px 20px;
+            border-radius: 28px;
+            border: 1px solid rgba(71, 85, 105, 0.3);
+            color: #CBD5E1;
+        }
+
+        .info-item i {
+            width: 32px;
+            color: #38BDF8;
+            font-size: 1.2rem;
+        }
+
+        .info-item span {
+            font-weight: 700;
+            color: #FACC15;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 4px 12px;
+            border-radius: 40px;
+            margin-left: 8px;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: flex-end;
+            gap: 18px;
+        }
+
+        .result-icon {
+            font-size: 70px;
+        }
+
+        .result-title {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 16px 0;
+            color: #F1F5F9;
+        }
+
+        .telegram-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: rgba(20, 35, 65, 0.7);
+            margin-top: 20px;
+            padding: 12px 18px;
+            border-radius: 40px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            width: 100%;
+            color: #c2deff;
+        }
+
+        .telegram-link:hover {
+            background: #2d4270;
+            color: white;
+        }
+
+        /* Modal CRM uslubida */
+        .modal-crm {
+            background: var(--bg2);
+            border: 1px solid var(--border2);
+            border-radius: 20px;
+            animation: modalIn .22s ease;
+        }
+
+        .modal-crm .modal-header {
+            border-bottom: 1px solid var(--border);
+            padding: 20px 24px;
+            background: rgba(17, 24, 39, 0.5);
+            border-radius: 20px 20px 0 0;
+        }
+
+        .modal-crm .modal-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text1);
+        }
+
+        .modal-crm .modal-title i {
+            color: var(--accent);
+        }
+
+        .modal-crm .modal-body {
+            padding: 24px;
+        }
+
+        .modal-crm .modal-footer {
+            border-top: 1px solid var(--border);
+            padding: 16px 24px;
+            gap: 12px;
+        }
+
+        .modal-crm .form-control {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            color: var(--text1);
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+
+        .modal-crm .form-control:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.12);
+        }
+
+        .modal-crm .btn-crm-cancel {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text2);
+            border: 1px solid var(--border2);
+            border-radius: 8px;
+            padding: 8px 20px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all .18s;
+        }
+
+        .modal-crm .btn-crm-cancel:hover {
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text1);
+        }
+
+        .modal-crm .btn-crm-submit {
+            background: var(--accent);
+            color: #fff;
+            border: 1px solid var(--accent);
+            border-radius: 8px;
+            padding: 8px 24px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all .18s;
+        }
+
+        .modal-crm .btn-crm-submit:hover {
+            background: #2563eb;
+            transform: translateY(-1px);
+        }
+
+        @media (max-width: 550px) {
+            .cert-form-container {
+                padding: 1.5rem;
+                max-width: 95%;
+            }
+
+            .test-card-header {
+                padding: 15px 20px;
+            }
+
+            .test-option-item {
+                padding: 10px 18px;
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+{% load static %}
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+    <div class="logo-icon">
+        <img src="{% static 'images/logo.png' %}" alt="Logo">
+    </div>
+
+    <div class="logo-text">
+        Ferdinant<span>Edu</span>CRM
+    </div>
+
+    <button class="close-btn" onclick="closeSidebar()">
+        <i class="fas fa-times"></i>
+    </button>
+</div>
+
+    <nav id="nav">
+        <div class="nav-item active" data-page="dashboard"><i class="fas fa-chart-line"></i> Dashboard</div>
+        <div class="nav-item" data-page="groups"><i class="fas fa-layer-group"></i> Guruhlar</div>
+        <div class="nav-item" data-page="students"><i class="fas fa-user-graduate"></i> O'quvchilar</div>
+        <div class="nav-item" data-page="payments"><i class="fas fa-credit-card"></i> To'lovlar</div>
+        <div class="nav-item" data-page="trash"><i class="fas fa-trash-alt"></i> O'chirilganlar <span class="nav-badge"
+                                                                                                      id="trash-badge"
+                                                                                                      style="display:none">0</span>
+        </div>
+        <div class="nav-item" data-page="tests"><i class="fas fa-flask"></i> Testlar</div>
+        <div class="nav-item" data-page="certificates"><i class="fas fa-certificate"></i> Sertifikatlar</div>
+    </nav>
+    <div class="sidebar-footer">Ferdinant Edu CRM &copy; 2026</div>
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<div class="main">
+    <div class="topbar">
+        <button class="menu-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
+        <div class="topbar-title" id="topbar-title">Dashboard</div>
+        <div class="topbar-actions">
+            <div class="topbar-stat" id="topbar-stat">O'quvchilar: 0</div>
+        </div>
+    </div>
+    <div class="content" id="content"></div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- MODALS (CRM uchun) -->
+<div class="modal-backdrop" id="group-modal">
+    <div class="modal-box">
+        <div class="modal-title"><i class="fas fa-layer-group"></i> <span id="group-modal-title">Yangi guruh</span>
+        </div>
+        <div class="form-group"><label>Guruh nomi *</label><input id="m-gname" placeholder="masalan: Matematika Asosiy">
+        </div>
+        <div class="form-group"><label>Dars vaqti</label><input id="m-gtime" type="time" value="15:00"></div>
+        <div class="form-group"><label>Kunlar</label><select id="m-gdays">
+            <option>DCHJ</option>
+            <option>SPSH</option>
+            <option>Har kuni</option>
+        </select></div>
+        <div class="form-group"><label>Fan</label><input id="m-gcourse" placeholder="Matematika"></div>
+        <div class="form-group"><label>O'qituvchi</label><input id="m-gteacher" placeholder="O'qituvchi ismi"></div>
+        <div class="form-group"><label>Oylik to'lov (so'm)</label><input id="m-gprice" type="text" class="money-input">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('group-modal')">Bekor</button>
+            <button class="btn btn-primary" onclick="saveGroup()"><i class="fas fa-save"></i> Saqlash</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="student-modal">
+    <div class="modal-box">
+        <div class="modal-title"><i class="fas fa-user-graduate"></i> <span
+                id="student-modal-title">Yangi o'quvchi</span></div>
+        <div class="form-group"><label>Ism familiya *</label><input id="m-sname" placeholder="To'liq ism"></div>
+        <div class="form-group"><label>Guruh</label><select id="m-sgroup"></select></div>
+        <div class="form-group"><label>Oylik to'lov (so'm)</label><input id="m-sdebt" type="text" class="money-input">
+        </div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('student-modal')">Bekor</button>
+            <button class="btn btn-primary" onclick="saveStudent()"><i class="fas fa-save"></i> Saqlash</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="payment-modal">
+    <div class="modal-box">
+        <div class="modal-title"><i class="fas fa-credit-card"></i> To'lov qabul qilish</div>
+        <div class="form-group"><label>O'quvchi</label>
+            <div id="pay-student-name" style="font-weight:600;color:var(--text1);padding:8px 0"></div>
+        </div>
+        <div class="form-group"><label>To'lov ma'lumoti</label>
+            <div id="pay-debt-info"
+                 style="font-family:var(--mono);padding:8px 0;border-bottom:1px solid var(--border);margin-bottom:8px"></div>
+        </div>
+        <div class="form-group"><label>Summa (so'm) *</label><input id="m-pamount" type="text" class="money-input">
+        </div>
+        <div class="form-group"><label>Oy</label><select id="m-pmonth"></select></div>
+        <div class="form-group"><label>Yil</label><input id="m-pyear" type="number"></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('payment-modal')">Bekor</button>
+            <button class="btn btn-success" onclick="submitPayment()"><i class="fas fa-check"></i> To'lov qilish
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="edit-payment-modal">
+    <div class="modal-box">
+        <div class="modal-title"><i class="fas fa-edit"></i> To'lovni tahrirlash</div>
+        <div class="form-group"><label>Yangi summa (so'm)</label><input id="m-epamount" type="text" class="money-input">
+        </div>
+        <div class="form-group"><label>Oy</label><select id="m-epmonth"></select></div>
+        <div class="form-group"><label>Yil</label><input id="m-epyear" type="number"></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('edit-payment-modal')">Bekor</button>
+            <button class="btn btn-primary" onclick="saveEditPayment()"><i class="fas fa-save"></i> Saqlash</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-backdrop" id="move-modal">
+    <div class="modal-box">
+        <div class="modal-title"><i class="fas fa-arrows-alt"></i> Guruhga ko'chirish</div>
+        <div class="form-group"><label>Yangi guruh</label><select id="m-movegroup"></select></div>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal('move-modal')">Bekor</button>
+            <button class="btn btn-primary" onclick="confirmMove()"><i class="fas fa-check"></i> Ko'chirish</button>
+        </div>
+    </div>
+</div>
+
+<!-- Test natijasi uchun modal (faqat ism so'rash) -->
+<div class="modal fade" id="nameModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="nameModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-crm">
+            <div class="modal-header">
+                <h5 class="modal-title" id="nameModalLabel"><i class="fas fa-graduation-cap me-2"></i> Natijani saqlash
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group mb-0">
+                    <label style="color:var(--text2); margin-bottom:8px;"><i class="fas fa-user me-1"></i> Ismingizni
+                        kiriting</label>
+                    <input type="text" class="form-control" id="userNameInput" placeholder="Masalan: Jahongir"
+                           autocomplete="off">
+                    <small class="text-muted mt-3 d-block" style="color:var(--text3) !important;"><i
+                            class="fab fa-telegram me-1"></i> Natija Telegram bot orqali yuboriladi</small>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-crm-cancel" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i>
+                    Bekor qilish
+                </button>
+                <button type="button" class="btn-crm-submit" id="confirmNameBtn"><i class="fas fa-paper-plane me-1"></i>
+                    Yuborish
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ===================== API KONFIGURATSIYA =====================
+    const API_URL = 'https://web-production-1275f.up.railway.app/api';
+
+    // ===================== GLOBAL O'ZGARUVCHILAR =====================
+    const MONTHS_UZ = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
+    const MONTHS_SH = ["Yan", "Fev", "Mar", "Apr", "May", "Iyun", "Iyul", "Avg", "Sen", "Okt", "Noy", "Dek"];
+    const COLORS = ["#3b82f6", "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"];
+
+    let groups = [];
+    let students = [];
+    let payments = [];
+    let trash = [];
+    let nextPId = 1;
+
+    let currentPage = "dashboard";
+    let currentStudentPage = 1;
+    const PER_PAGE = 10;
+    let studentSearch = "";
+    let paymentSearch = "";
+    let groupFilter = "all";
+    let editGroupId = null;
+    let editStudentId = null;
+    let editPaymentId = null;
+    let moveStudentId = null;
+    let currentPayStudentId = null;
+    let chartInstance = null;
+    let chartYear = new Date().getFullYear();
+
+    // Test uchun global o'zgaruvchilar
+    let testQuestions = [];
+    let testCurrentIndex = 0;
+    let testUserScore = 0;
+    let testQuizActive = false;
+    let testTimerInterval = null;
+    let testTimeLeft = 30;
+    let testCanAnswer = true;
+
+    // ===================== UTILS =====================
+    const fmt = n => {
+        if (Math.abs(n) >= 1000000) return (n / 1000000).toFixed(1) + "M";
+        return Number(n).toLocaleString("en-US");
+    };
+    const fmtFull = n => Number(n).toLocaleString("en-US");
+    const now = () => new Date();
+    const curMonth = () => MONTHS_UZ[now().getMonth()];
+    const curYear = () => now().getFullYear();
+    const initials = name => name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
+    const hashColor = name => COLORS[Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
+
+    function toast(msg, type = "success") {
+        const tc = document.getElementById("toast-container");
+        const el = document.createElement("div");
+        el.className = `toast ${type}`;
+        el.innerHTML = `<i class="fas ${type === "success" ? "fa-check-circle" : "fa-exclamation-circle"}"></i>${msg}`;
+        tc.appendChild(el);
+        setTimeout(() => {
+            el.style.opacity = "0";
+            setTimeout(() => el.remove(), 250);
+        }, 2600);
+    }
+
+    function initMoneyInputs() {
+        document.querySelectorAll(".money-input").forEach(el => {
+            if (el._bound) return;
+            el._bound = true;
+            el.addEventListener("input", function () {
+                let raw = this.value.replace(/[^0-9]/g, "");
+                let num = parseInt(raw || "0");
+                this.value = num.toLocaleString("en-US");
+            });
+        });
+    }
+
+    function getMoneyVal(id) {
+        const el = document.getElementById(id);
+        if (!el) return 0;
+        return parseInt(el.value.replace(/[^0-9]/g, "") || "0");
+    }
+
+    function setMoneyVal(id, num) {
+        const el = document.getElementById(id);
+        if (el) el.value = num > 0 ? num.toLocaleString("en-US") : "";
+    }
+
+    function openModal(id) {
+        document.getElementById(id).classList.add("open");
+        setTimeout(initMoneyInputs, 10);
+    }
+
+    function closeModal(id) {
+        document.getElementById(id).classList.remove("open");
+    }
+
+    function openSidebar() {
+        document.getElementById("sidebar").classList.add("open");
+        document.getElementById("overlay").classList.add("show");
+    }
+
+    function closeSidebar() {
+        document.getElementById("sidebar").classList.remove("open");
+        document.getElementById("overlay").classList.remove("show");
+    }
+
+    function closeAllDropdowns() {
+        document.querySelectorAll(".dd-menu").forEach(d => d.remove());
+    }
+
+    document.addEventListener("click", () => closeAllDropdowns());
+    document.querySelectorAll(".modal-backdrop").forEach(m => m.addEventListener("click", e => {
+        if (e.target === m) m.classList.remove("open");
+    }));
+
+    // ===================== API FUNKSIYALARI =====================
+    async function loadData() {
+        try {
+            const [groupsRes, studentsRes, paymentsRes, trashRes] = await Promise.all([
+                fetch(`${API_URL}/groups/`),
+                fetch(`${API_URL}/students/`),
+                fetch(`${API_URL}/payments/`),
+                fetch(`${API_URL}/trash/`)
+            ]);
+
+            groups = await groupsRes.json();
+            students = await studentsRes.json();
+            payments = await paymentsRes.json();
+            const trashData = await trashRes.json();
+            trash = trashData.map(t => ({
+                ...t.student_data,
+                trashId: t.id,
+                fromGroup: t.from_group,
+                deleted_at: t.created_at || t.deleted_at || new Date().toISOString()
+            }));
+
+            nextPId = payments.length > 0 ? Math.max(...payments.map(p => p.id)) + 1 : 1;
+            updateTopbarStat();
+            render();
+        } catch (e) {
+            console.error("Backendga ulanishda xatolik:", e);
+            toast("Backendga ulanishda xatolik! Server ishlayotganligini tekshiring.", "error");
+        }
+    }
+
+    // ===================== AVTOMATIK TOZALASH (3 KUN) =====================
+    async function autoCleanupTrash() {
+        try {
+            const threeDaysAgo = new Date();
+            threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+            threeDaysAgo.setHours(0, 0, 0, 0);
+
+            const trashRes = await fetch(`${API_URL}/trash/`);
+            const trashList = await trashRes.json();
+
+            let deletedCount = 0;
+            for (let t of trashList) {
+                const deletedDate = new Date(t.created_at || t.deleted_at);
+                if (deletedDate < threeDaysAgo) {
+                    await fetch(`${API_URL}/trash/${t.id}/`, {method: 'DELETE'});
+                    deletedCount++;
+                }
+            }
+
+            if (deletedCount > 0) {
+                toast(`${deletedCount} ta eski o'chirilgan o'quvchi avtomatik tozalandi (3 kun o'tdi)`, "info");
+                await loadData();
+            }
+        } catch (e) {
+            console.error("Avtomatik tozalashda xatolik:", e);
+        }
+    }
+
+    // Har 6 soatda bir marta tekshiradi
+    setInterval(() => {
+        autoCleanupTrash();
+    }, 6 * 60 * 60 * 1000);
+    setTimeout(() => {
+        autoCleanupTrash();
+    }, 5000);
+
+    // ===================== NAVIGATION =====================
+    document.querySelectorAll(".nav-item").forEach(el => {
+        el.addEventListener("click", () => {
+            currentPage = el.dataset.page;
+            studentSearch = "";
+            paymentSearch = "";
+            currentStudentPage = 1;
+            document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+            el.classList.add("active");
+            const titles = {
+                dashboard: "Dashboard",
+                groups: "Guruhlar",
+                students: "O'quvchilar",
+                payments: "To'lovlar",
+                trash: "O'chirilganlar",
+                tests: "Testlar",
+                certificates: "Sertifikatlar"
+            };
+            document.getElementById("topbar-title").textContent = titles[currentPage] || currentPage;
+            render();
+            if (window.innerWidth <= 768) closeSidebar();
+        });
+    });
+
+    function updateTopbarStat() {
+        document.getElementById("topbar-stat").textContent = `O'quvchilar: ${students.length}`;
+        const tb = document.getElementById("trash-badge");
+        if (trash.length > 0) {
+            tb.style.display = "";
+            tb.textContent = trash.length;
+        } else {
+            tb.style.display = "none";
+        }
+    }
+
+    function render() {
+        if (currentPage === "dashboard") renderDashboard();
+        else if (currentPage === "groups") renderGroups();
+        else if (currentPage === "students") renderStudents();
+        else if (currentPage === "payments") renderPayments();
+        else if (currentPage === "trash") renderTrash();
+        else if (currentPage === "tests") renderTests();
+        else if (currentPage === "certificates") renderCertificates();
+        else renderPlaceholder();
+    }
+
+    // ===================== DASHBOARD =====================
+    function renderDashboard() {
+        const income = payments.filter(p => p.month === curMonth() && p.year === curYear()).reduce((s, p) => s + p.amount, 0);
+        const totalIncome = payments.reduce((s, p) => s + p.amount, 0);
+        const totalDebt = students.reduce((s, st) => s + st.debt_amount, 0);
+        const debtors = students.filter(s => s.debt_amount > 0).length;
+        const recentPays = [...payments].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 8);
+
+        document.getElementById("content").innerHTML = `
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-icon blue"><i class="fas fa-calendar-alt"></i></div><div class="stat-val sm">${fmt(income)} so'm</div><div class="stat-lbl">${curMonth()} oyi tushumi</div></div>
+            <div class="stat-card"><div class="stat-icon green"><i class="fas fa-coins"></i></div><div class="stat-val sm">${fmt(totalIncome)} so'm</div><div class="stat-lbl">Jami tushum</div></div>
+            <div class="stat-card"><div class="stat-icon red"><i class="fas fa-exclamation-triangle"></i></div><div class="stat-val sm">${fmt(totalDebt)} so'm</div><div class="stat-lbl">Jami qarzdorlik</div></div>
+            <div class="stat-card"><div class="stat-icon amber"><i class="fas fa-users"></i></div><div class="stat-val">${students.length}</div><div class="stat-lbl">Jami o'quvchilar</div></div>
+            <div class="stat-card"><div class="stat-icon purple"><i class="fas fa-user-slash"></i></div><div class="stat-val">${debtors}</div><div class="stat-lbl">Qarzdorlar</div></div>
+        </div>
+        <div class="chart-box">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+                <div class="section-title" style="margin-bottom:0">Oylik to'lov grafigi</div>
+                <input type="number" id="chart-year" value="${chartYear}" style="width:90px" onchange="chartYear=parseInt(this.value);renderDashboard()">
+            </div>
+            <div style="height:200px"><canvas id="main-chart"></canvas></div>
+        </div>
+        <div class="chart-box"><div class="section-title">Oxirgi to'lovlar</div>${recentPays.length ? recentPays.map(p => {
+            const st = students.find(s => s.id === p.student);
+            return `<div class="pay-item"><div class="pay-dot" style="background:${st?.debt_amount > 0 ? (st.paid_amount > 0 ? 'var(--amber)' : 'var(--red)') : 'var(--green)'}"></div><div class="pay-info"><div class="pay-name">${st?.name || "O'chirilgan"}</div><div class="pay-date">${p.month} ${p.year} · ${p.date}</div><div class="pay-sub">💰 To'langan: ${fmt(p.amount)} | 📌 ${st?.debt_amount > 0 ? (st.paid_amount > 0 ? fmtFull(st.debt_amount) + " so'm qarz" : "To'liq qarzdor") : "To'liq to'langan"}</div></div><div class="pay-amount">+${fmt(p.amount)}</div></div>`;
+        }).join("") : `<div class="empty"><i class="fas fa-receipt"></i><p>Hali to'lov yo'q</p></div>`}</div>`;
+        setTimeout(() => buildChart(), 80);
+    }
+
+    function buildChart() {
+        const ctx = document.getElementById("main-chart");
+        if (!ctx) return;
+        const data = MONTHS_UZ.map(m => payments.filter(p => p.month === m && p.year === chartYear).reduce((s, p) => s + p.amount, 0));
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: MONTHS_SH,
+                datasets: [{
+                    label: `${chartYear}`,
+                    data,
+                    backgroundColor: "rgba(59,130,246,0.25)",
+                    borderColor: "#3b82f6",
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {legend: {display: false}},
+                scales: {y: {ticks: {callback: v => fmt(v)}}}
+            }
+        });
+    }
+
+    // ===================== GROUPS =====================
+    function renderGroups() {
+        const filtered = groups.filter(g => groupFilter === "all" || g.days === groupFilter);
+        document.getElementById("content").innerHTML = `
+        <div class="filter-bar"><button class="btn btn-ghost ${groupFilter === "all" ? "active" : ""}" onclick="groupFilter='all';renderGroups()">Barchasi (${groups.length})</button><button class="btn btn-ghost ${groupFilter === "DCHJ" ? "active" : ""}" onclick="groupFilter='DCHJ';renderGroups()">DCHJ</button><button class="btn btn-ghost ${groupFilter === "SPSH" ? "active" : ""}" onclick="groupFilter='SPSH';renderGroups()">SPSH</button><button class="btn btn-primary" style="margin-left:auto" onclick="openGroupModal()"><i class="fas fa-plus"></i> Guruh qo'shish</button></div>
+        <div class="groups-grid">${filtered.map(g => {
+            const cnt = students.filter(s => s.group === g.id).length;
+            const pct = Math.min(100, Math.round(cnt / (g.max_students || 17) * 100));
+            const isFull = cnt >= (g.max_students || 17);
+            return `<div class="group-card" onclick="showGroupDetail(${g.id})"><div class="group-card-head"><div><div style="font-weight:700">${g.name}</div><div style="font-size:11px;color:var(--text2)">${g.course_type}</div></div><div class="dd-wrap" onclick="event.stopPropagation()"><button class="btn btn-ghost btn-sm" onclick="toggleGroupDD(event,${g.id})"><i class="fas fa-ellipsis-v"></i></button></div></div><div class="group-card-body"><div class="group-meta"><i class="fas fa-clock"></i>${g.time}</div><div class="group-meta"><i class="fas fa-calendar-week"></i>${g.days}</div><div class="group-meta"><i class="fas fa-chalkboard-teacher"></i>${g.teacher}</div><div class="group-meta"><i class="fas fa-money-bill-wave"></i>${fmtFull(g.price)} so'm</div><div><div style="display:flex;justify-content:space-between"><span>O'quvchilar</span><span>${cnt}/${g.max_students || 17}${isFull ? " TO'LGAN" : ""}</span></div><div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div></div></div></div>`;
+        }).join("")}</div>`;
+    }
+
+    function toggleGroupDD(e, id) {
+        e.stopPropagation();
+        closeAllDropdowns();
+        const menu = document.createElement("div");
+        menu.className = "dd-menu";
+        menu.innerHTML = `<button class="dd-item" onclick="openGroupModal(${id})"><i class="fas fa-edit"></i> Tahrirlash</button><button class="dd-item red" onclick="deleteGroup(${id})"><i class="fas fa-trash"></i> O'chirish</button>`;
+        e.currentTarget.parentElement.appendChild(menu);
+    }
+
+    function openGroupModal(id = null) {
+        editGroupId = id;
+        const g = id ? groups.find(gr => gr.id === id) : null;
+        document.getElementById("group-modal-title").textContent = g ? "Guruhni tahrirlash" : "Yangi guruh";
+        document.getElementById("m-gname").value = g?.name || "";
+        document.getElementById("m-gtime").value = g?.time || "15:00";
+        document.getElementById("m-gdays").value = g?.days || "DCHJ";
+        document.getElementById("m-gcourse").value = g?.course_type || "";
+        document.getElementById("m-gteacher").value = g?.teacher || "";
+        setMoneyVal("m-gprice", g?.price || 500000);
+        openModal("group-modal");
+    }
+
+    async function saveGroup() {
+        const name = document.getElementById("m-gname").value.trim();
+        if (!name) return toast("Guruh nomi kiritilishi shart!", "error");
+        const data = {
+            name,
+            time: document.getElementById("m-gtime").value,
+            days: document.getElementById("m-gdays").value,
+            course_type: document.getElementById("m-gcourse").value.trim() || "Boshqa",
+            teacher: document.getElementById("m-gteacher").value.trim() || "—",
+            price: getMoneyVal("m-gprice"),
+            max_students: 17
+        };
+        if (editGroupId) {
+            const res = await fetch(`${API_URL}/groups/${editGroupId}/`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) toast("Guruh tahrirlandi");
+        } else {
+            const res = await fetch(`${API_URL}/groups/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) toast("Yangi guruh qo'shildi");
+        }
+        closeModal("group-modal");
+        await loadData();
+    }
+
+    async function deleteGroup(id) {
+        if (!confirm("Guruh o'chirilsinmi?")) return;
+        await fetch(`${API_URL}/groups/${id}/`, {method: 'DELETE'});
+        toast("Guruh o'chirildi");
+        await loadData();
+    }
+
+    function showGroupDetail(groupId) {
+        const g = groups.find(gr => gr.id === groupId);
+        const grStudents = students.filter(s => s.group === groupId);
+        document.getElementById("content").innerHTML = `
+        <div class="detail-header"><div class="detail-back" onclick="renderGroups()"><i class="fas fa-arrow-left"></i> Orqaga</div><button class="btn btn-primary btn-sm" onclick="openStudentModal(null,${groupId})"><i class="fas fa-user-plus"></i> O'quvchi qo'shish</button></div>
+        <div class="chart-box"><div><div style="font-size:20px;font-weight:700">${g.name}</div><div class="group-meta">${g.time} · ${g.days} · ${g.teacher} · ${fmtFull(g.price)} so'm</div></div></div>
+        <div>${grStudents.map(s => renderStudentItem(s, true)).join("")}${grStudents.length === 0 ? `<div class="empty"><i class="fas fa-user-graduate"></i><p>Bu guruhda o'quvchi yo'q</p></div>` : ""}</div>`;
+    }
+
+    // ===================== STUDENTS =====================
+    function renderStudents() {
+        const filtered = students.filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()));
+        const total = Math.ceil(filtered.length / PER_PAGE) || 1;
+        if (currentStudentPage > total) currentStudentPage = 1;
+        const slice = filtered.slice((currentStudentPage - 1) * PER_PAGE, currentStudentPage * PER_PAGE);
+
+        const content = document.getElementById("content");
+        if (!document.getElementById("students-list")) {
+            content.innerHTML = `
+            <div class="filter-bar">
+                <input id="s-search" placeholder="🔍 Ism bo'yicha izlash..." style="flex:1">
+                <button class="btn btn-primary" onclick="openStudentModal()"><i class="fas fa-user-plus"></i> O'quvchi qo'shish</button>
+            </div>
+            <div id="students-list"></div>
+            <div id="students-pagination" class="pagination"></div>`;
+
+            document.getElementById("s-search").addEventListener("input", e => {
+                studentSearch = e.target.value;
+                currentStudentPage = 1;
+                _refreshStudentList();
+            });
+        }
+
+        const searchEl = document.getElementById("s-search");
+        if (searchEl && searchEl.value !== studentSearch) {
+            searchEl.value = studentSearch;
+        }
+
+        _refreshStudentList();
+    }
+
+    function _refreshStudentList() {
+        const filtered = students.filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()));
+        const total = Math.ceil(filtered.length / PER_PAGE) || 1;
+        if (currentStudentPage > total) currentStudentPage = 1;
+        const slice = filtered.slice((currentStudentPage - 1) * PER_PAGE, currentStudentPage * PER_PAGE);
+
+        const listEl = document.getElementById("students-list");
+        if (listEl) {
+            listEl.innerHTML = slice.map(s => renderStudentItem(s, false)).join("") ||
+                '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
+        }
+
+        let pages = "";
+        for (let i = 1; i <= total; i++) {
+            pages += `<button class="page-btn ${i === currentStudentPage ? "active" : ""}" onclick="currentStudentPage=${i};_refreshStudentList()">${i}</button>`;
+        }
+        const pagEl = document.getElementById("students-pagination");
+        if (pagEl) pagEl.innerHTML = pages;
+    }
+
+    function renderStudentItem(s, inGroup) {
+        const grp = groups.find(g => g.id === s.group);
+        const col = hashColor(s.name);
+
+        let statusBadge = '';
+        if (s.debt_amount <= 0) {
+            statusBadge = `<span class="badge badge-paid"><i class="fas fa-check-circle"></i> To'langan ✅</span>`;
+        } else if (s.paid_amount > 0) {
+            statusBadge = `<span class="badge badge-partial"><i class="fas fa-exclamation-triangle"></i> Qisman: ${fmtFull(s.paid_amount)} to'langan / ${fmtFull(s.debt_amount)} qarz</span>`;
+        } else {
+            statusBadge = `<span class="badge badge-debt"><i class="fas fa-times-circle"></i> Qarzdor: ${fmtFull(s.debt_amount)} so'm</span>`;
+        }
+
+        return `<div class="student-item">
+        <div class="student-avatar" style="background:${col}22;color:${col}">${initials(s.name)}</div>
+        <div class="student-info">
+            <div class="student-name">${s.name}</div>
+            <div class="student-sub">${grp?.name || "Guruhsiz"} · ${statusBadge}</div>
+        </div>
+        <div class="student-actions">
+            <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})" title="To'lov qilish"><i class="fas fa-credit-card"></i></button>
+            ${!inGroup ? `<button class="btn btn-ghost btn-sm" onclick="openMoveModal(${s.id})" title="Guruhga ko'chirish"><i class="fas fa-arrows-alt"></i></button>` : ""}
+            <button class="btn btn-ghost btn-sm" onclick="openStudentModal(${s.id})" title="Tahrirlash"><i class="fas fa-edit"></i></button>
+            <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id})" title="O'chirish"><i class="fas fa-trash"></i></button>
+        </div>
+    </div>`;
+    }
+
+    function openStudentModal(id = null, preGroupId = null) {
+        editStudentId = id;
+        const s = id ? students.find(st => st.id === id) : null;
+        document.getElementById("student-modal-title").textContent = s ? "O'quvchini tahrirlash" : "Yangi o'quvchi";
+        document.getElementById("m-sname").value = s?.name || "";
+        setMoneyVal("m-sdebt", s?.original_debt || 500000);
+        const grpSel = document.getElementById("m-sgroup");
+        grpSel.innerHTML = `<option value="">— Guruh tanlanmagan —</option>` + groups.map(g => `<option value="${g.id}" ${(s && s.group === g.id) || preGroupId === g.id ? "selected" : ""}>${g.name}</option>`).join("");
+        openModal("student-modal");
+    }
+
+    async function saveStudent() {
+        const name = document.getElementById("m-sname").value.trim();
+        if (!name) return toast("Ism kiritilishi shart!", "error");
+        const groupId = parseInt(document.getElementById("m-sgroup").value) || null;
+        const originalDebt = getMoneyVal("m-sdebt");
+
+        let data = {
+            name,
+            group: groupId,
+            original_debt: originalDebt,
+            debt_amount: originalDebt,
+            paid_amount: 0,
+            payment_status: originalDebt > 0 ? "debt" : "paid"
+        };
+
+        if (editStudentId) {
+            const oldStudent = students.find(s => s.id === editStudentId);
+            if (oldStudent) {
+                const debtDiff = originalDebt - oldStudent.original_debt;
+                const newDebtAmount = oldStudent.debt_amount + debtDiff;
+                data = {
+                    ...oldStudent,
+                    name, group: groupId,
+                    original_debt: originalDebt,
+                    debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
+                    paid_amount: oldStudent.paid_amount,
+                    payment_status: newDebtAmount <= 0 ? "paid" : (oldStudent.paid_amount > 0 ? "partial" : "debt")
+                };
+            }
+            const res = await fetch(`${API_URL}/students/${editStudentId}/`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) toast("O'quvchi ma'lumotlari yangilandi");
+        } else {
+            const res = await fetch(`${API_URL}/students/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(data)
+            });
+            if (res.ok) toast("Yangi o'quvchi qo'shildi");
+        }
+        closeModal("student-modal");
+        await loadData();
+    }
+
+    async function deleteStudent(id) {
+        const s = students.find(st => st.id === id);
+        if (!s || !confirm(`"${s.name}" o'chirilsinmi?`)) return;
+        const grp = groups.find(g => g.id === s.group);
+        const trashData = {
+            student_data: s,
+            from_group: grp?.name || "Noma'lum",
+            created_at: new Date().toISOString()
+        };
+        await fetch(`${API_URL}/trash/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(trashData)
+        });
+        await fetch(`${API_URL}/students/${id}/`, {method: 'DELETE'});
+        toast(`"${s.name}" o'chirildi (3 kundan keyin avtomatik tozalanadi)`);
+        await loadData();
+    }
+
+    function openMoveModal(studentId) {
+        moveStudentId = studentId;
+        const s = students.find(st => st.id === studentId);
+        document.getElementById("m-movegroup").innerHTML = groups.map(g => `<option value="${g.id}" ${g.id === s?.group ? "selected" : ""}>${g.name}</option>`).join("");
+        openModal("move-modal");
+    }
+
+    async function confirmMove() {
+        const newGid = parseInt(document.getElementById("m-movegroup").value);
+        if (newGid) {
+            const res = await fetch(`${API_URL}/students/${moveStudentId}/`, {
+                method: 'PATCH',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({group: newGid})
+            });
+            if (res.ok) toast("O'quvchi yangi guruhga ko'chirildi");
+            closeModal("move-modal");
+            await loadData();
+        }
+    }
+
+    // ===================== PAYMENTS =====================
+    function renderPayments() {
+        const content = document.getElementById("content");
+
+        if (!document.getElementById("pay-students-list")) {
+            content.innerHTML = `
+            <div class="filter-bar">
+                <input id="p-search" placeholder="🔍 O'quvchi izlash..." style="flex:1">
+            </div>
+            <div id="pay-students-list"></div>
+            <div class="chart-box">
+                <div id="pay-history-title" class="section-title">To'lovlar tarixi</div>
+                <div id="pay-history-list"></div>
+            </div>`;
+
+            document.getElementById("p-search").addEventListener("input", e => {
+                paymentSearch = e.target.value;
+                _refreshPaymentList();
+            });
+        }
+
+        const searchEl = document.getElementById("p-search");
+        if (searchEl && searchEl.value !== paymentSearch) {
+            searchEl.value = paymentSearch;
+        }
+
+        _refreshPaymentList();
+    }
+
+    function _refreshPaymentList() {
+        const filtered = students.filter(s => s.name.toLowerCase().includes(paymentSearch.toLowerCase()));
+
+        const listEl = document.getElementById("pay-students-list");
+        if (listEl) {
+            listEl.innerHTML = filtered.map(s =>
+                `<div class="student-item">
+                <div class="student-avatar" style="background:${hashColor(s.name)}22;color:${hashColor(s.name)}">${initials(s.name)}</div>
+                <div class="student-info">
+                    <div class="student-name">${s.name}</div>
+                    <div class="student-sub">💰 To'langan: ${fmtFull(s.paid_amount)} | 📌 Qarz: ${fmtFull(s.debt_amount)}</div>
+                </div>
+                <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})">To'lov</button>
+            </div>`
+            ).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
+        }
+
+        const titleEl = document.getElementById("pay-history-title");
+        if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payments.length})`;
+
+        const histEl = document.getElementById("pay-history-list");
+        if (histEl) {
+            histEl.innerHTML = [...payments]
+                .sort((a, b) => new Date(b.date) - new Date(a.date))
+                .map(p => {
+                    const st = students.find(s => s.id === p.student);
+                    let dotColor = "var(--green)";
+                    let debtText = "To'liq to'langan";
+                    if (st && st.debt_amount > 0) {
+                        dotColor = "var(--red)";
+                        debtText = fmtFull(st.debt_amount) + " so'm qarz";
+                        if (st.paid_amount > 0) dotColor = "var(--amber)";
+                    }
+                    return `<div class="pay-item">
+                    <div class="pay-dot" style="background:${dotColor}"></div>
+                    <div class="pay-info">
+                        <div class="pay-name">${st?.name || "O'chirilgan"}</div>
+                        <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
+                        <div class="pay-sub">💰 To'langan: ${fmt(p.amount)} | 📌 ${debtText}</div>
+                    </div>
+                    <div class="pay-amount">+${fmt(p.amount)}</div>
+                    <div class="pay-actions">
+                        <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+                }).join("") || '<div class="empty"><i class="fas fa-receipt"></i><p>Hali to\'lov yo\'q</p></div>';
+        }
+    }
+
+    function openPayModal(studentId) {
+        currentPayStudentId = studentId;
+        const s = students.find(st => st.id === studentId);
+        document.getElementById("pay-student-name").textContent = s?.name || "";
+
+        const debtInfo = `
+        <div style="margin-bottom:8px">
+            <span style="color:var(--text2)">Umumiy to'lov:</span>
+            <span style="color:var(--text1)">${fmtFull(s?.original_debt || 0)} so'm</span>
+        </div>
+        <div style="margin-bottom:8px">
+            <span style="color:var(--text2)">To'langan:</span>
+            <span style="color:var(--green)">${fmtFull(s?.paid_amount || 0)} so'm</span>
+        </div>
+        <div>
+            <span style="color:var(--text2)">Qolgan qarz:</span>
+            <span style="color:${s?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}; font-weight:700">
+                ${s?.debt_amount > 0 ? fmtFull(s.debt_amount) + " so'm" : "To'liq to'langan ✓"}
+            </span>
+        </div>
+    `;
+        document.getElementById("pay-debt-info").innerHTML = debtInfo;
+
+        setMoneyVal("m-pamount", s?.debt_amount > 0 ? s.debt_amount : 0);
+
+        const mSel = document.getElementById("m-pmonth");
+        mSel.innerHTML = MONTHS_UZ.map(m => `<option value="${m}" ${m === curMonth() ? "selected" : ""}>${m}</option>`).join("");
+        document.getElementById("m-pyear").value = curYear();
+        openModal("payment-modal");
+    }
+
+    async function submitPayment() {
+        const amount = getMoneyVal("m-pamount");
+        const month = document.getElementById("m-pmonth").value;
+        const year = parseInt(document.getElementById("m-pyear").value) || curYear();
+        if (!amount || amount <= 0) return toast("To'g'ri summa kiriting!", "error");
+
+        const student = students.find(s => s.id === currentPayStudentId);
+        if (!student) return toast("O'quvchi topilmadi!", "error");
+
+        if (amount > student.debt_amount) {
+            return toast(`Kiritilgan summa (${fmtFull(amount)}) qarzdorlikdan (${fmtFull(student.debt_amount)}) katta!`, "error");
+        }
+
+        const newPaidAmount = student.paid_amount + amount;
+        const newDebtAmount = student.original_debt - newPaidAmount;
+
+        let paymentStatus = "partial";
+        if (newDebtAmount <= 0) paymentStatus = "paid";
+        else if (newPaidAmount === 0) paymentStatus = "debt";
+
+        const data = {
+            student: currentPayStudentId,
+            amount,
+            month,
+            year,
+            date: now().toISOString().slice(0, 10)
+        };
+
+        const payRes = await fetch(`${API_URL}/payments/`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        });
+
+        if (payRes.ok) {
+            const updateData = {
+                ...student,
+                paid_amount: newPaidAmount,
+                debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
+                payment_status: paymentStatus
+            };
+
+            await fetch(`${API_URL}/students/${currentPayStudentId}/`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(updateData)
+            });
+
+            toast(`${fmtFull(amount)} so'm to'lov qabul qilindi`);
+            closeModal("payment-modal");
+            await loadData();
+        } else toast("Xatolik yuz berdi!", "error");
+    }
+
+    function openEditPayModal(payId) {
+        editPaymentId = payId;
+        const p = payments.find(py => py.id === payId);
+        if (p) {
+            setMoneyVal("m-epamount", p.amount);
+            const mSel = document.getElementById("m-epmonth");
+            mSel.innerHTML = MONTHS_UZ.map(m => `<option value="${m}" ${m === p.month ? "selected" : ""}>${m}</option>`).join("");
+            document.getElementById("m-epyear").value = p.year;
+            openModal("edit-payment-modal");
+        }
+    }
+
+    async function saveEditPayment() {
+        const newAmount = getMoneyVal("m-epamount");
+        const newMonth = document.getElementById("m-epmonth").value;
+        const newYear = parseInt(document.getElementById("m-epyear").value) || curYear();
+        if (!newAmount || newAmount <= 0) return toast("To'g'ri summa kiriting!", "error");
+
+        const oldPayment = payments.find(p => p.id === editPaymentId);
+        if (!oldPayment) return toast("To'lov topilmadi!", "error");
+
+        const student = students.find(s => s.id === oldPayment.student);
+        if (!student) return toast("O'quvchi topilmadi!", "error");
+
+        const amountDiff = newAmount - oldPayment.amount;
+        const newPaidAmount = student.paid_amount + amountDiff;
+        const newDebtAmount = student.original_debt - newPaidAmount;
+
+        let paymentStatus = "partial";
+        if (newDebtAmount <= 0) paymentStatus = "paid";
+        else if (newPaidAmount === 0) paymentStatus = "debt";
+
+        const updateData = {
+            ...student,
+            paid_amount: newPaidAmount,
+            debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
+            payment_status: paymentStatus
+        };
+
+        await fetch(`${API_URL}/students/${student.id}/`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(updateData)
+        });
+
+        const res = await fetch(`${API_URL}/payments/${editPaymentId}/`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({amount: newAmount, month: newMonth, year: newYear})
+        });
+
+        if (res.ok) {
+            toast("To'lov tahrirlandi");
+            closeModal("edit-payment-modal");
+            await loadData();
+        }
+    }
+
+    async function deletePayment(payId) {
+        if (!confirm("To'lovni o'chirish qarzdorlikni qayta tiklaydi. Davom etilsinmi?")) return;
+
+        const payment = payments.find(p => p.id === payId);
+        if (!payment) return toast("To'lov topilmadi!", "error");
+
+        const student = students.find(s => s.id === payment.student);
+        if (!student) return toast("O'quvchi topilmadi!", "error");
+
+        const newPaidAmount = student.paid_amount - payment.amount;
+        const newDebtAmount = student.original_debt - newPaidAmount;
+
+        let paymentStatus = "debt";
+        if (newDebtAmount <= 0) paymentStatus = "paid";
+        else if (newPaidAmount > 0) paymentStatus = "partial";
+
+        const updateData = {
+            ...student,
+            paid_amount: newPaidAmount >= 0 ? newPaidAmount : 0,
+            debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
+            payment_status: paymentStatus
+        };
+
+        await fetch(`${API_URL}/students/${student.id}/`, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(updateData)
+        });
+
+        const res = await fetch(`${API_URL}/payments/${payId}/`, {method: 'DELETE'});
+        if (res.ok) {
+            toast("To'lov o'chirildi va qarzdorlik tiklandi");
+            await loadData();
+        }
+    }
+
+    // ===================== TRASH (3 KUN avtomatik o'chirish va vaqt ko'rsatish) =====================
+    function renderTrash() {
+        const now = new Date();
+
+        document.getElementById("content").innerHTML = `
+        <div style="margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px">
+            <div style="background:rgba(239,68,68,0.1); padding:8px 16px; border-radius:12px; font-size:12px">
+                <i class="fas fa-info-circle"></i> O'chirilgan o'quvchilar <strong>3 kundan keyin</strong> avtomatik butunlay o'chiriladi
+            </div>
+            <button class="btn btn-danger btn-sm" onclick="if(confirm('Barchasini o\'chirish?')){ clearTrash(); }">
+                <i class="fas fa-trash"></i> Hammasini o'chirish
+            </button>
+        </div>
+        ${trash.length ? trash.map(t => {
+            const deletedDate = new Date(t.deleted_at);
+            const expireDate = new Date(deletedDate);
+            expireDate.setDate(expireDate.getDate() + 3);
+            const remainingMs = expireDate - now;
+            const remainingDays = Math.ceil(remainingMs / (1000 * 60 * 60 * 24));
+            const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60));
+
+            let timeLeftText = '';
+            let timeLeftColor = 'var(--text3)';
+            if (remainingDays > 0) {
+                timeLeftText = `${remainingDays} kun qoldi`;
+                if (remainingDays <= 1) timeLeftColor = 'var(--amber)';
+            } else if (remainingHours > 0) {
+                timeLeftText = `${remainingHours} soat qoldi`;
+                timeLeftColor = 'var(--red)';
+            } else {
+                timeLeftText = `Hozir o'chiriladi`;
+                timeLeftColor = 'var(--red)';
+            }
+
+            return `<div class="student-item">
+                <div class="student-avatar" style="background:#aaa3">${initials(t.name)}</div>
+                <div class="student-info">
+                    <div class="student-name">${t.name}</div>
+                    <div class="student-sub">Guruh: ${t.fromGroup || "Noma'lum"}</div>
+                    <div class="student-sub" style="color:${timeLeftColor}; font-size:10px; margin-top:4px">
+                        <i class="far fa-clock"></i> Avtomatik o'chish: ${timeLeftText}
+                    </div>
+                </div>
+                <button class="btn btn-success btn-sm" onclick="restoreStudent(${t.trashId})">
+                    <i class="fas fa-undo-alt"></i> Qaytarish
+                </button>
+            </div>`;
+        }).join("") : '<div class="empty"><i class="fas fa-trash-alt"></i><p>O\'chirish savati bo\'sh</p></div>'}
+    `;
+    }
+
+    async function restoreStudent(trashId) {
+        try {
+            const res = await fetch(`${API_URL}/trash/${trashId}/restore/`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'}
+            });
+            if (res.ok) {
+                toast("O'quvchi muvaffaqiyatli qaytarildi");
+                await loadData();
+            } else {
+                const trashItem = trash.find(t => t.trashId === trashId);
+                if (trashItem) {
+                    const studentData = {...trashItem};
+                    delete studentData.trashId;
+                    delete studentData.fromGroup;
+                    delete studentData.deleted_at;
+                    const createRes = await fetch(`${API_URL}/students/`, {
+                        method: 'POST',
+                        headers: {'Content-Type': 'application/json'},
+                        body: JSON.stringify(studentData)
+                    });
+                    if (createRes.ok) {
+                        await fetch(`${API_URL}/trash/${trashId}/`, {method: 'DELETE'});
+                        toast("O'quvchi qaytarildi");
+                        await loadData();
+                    } else toast("Qaytarishda xatolik!", "error");
+                } else toast("O'quvchi ma'lumoti topilmadi!", "error");
+            }
+        } catch (e) {
+            const trashItem = trash.find(t => t.trashId === trashId);
+            if (trashItem) {
+                const studentData = {...trashItem};
+                delete studentData.trashId;
+                delete studentData.fromGroup;
+                delete studentData.deleted_at;
+                const createRes = await fetch(`${API_URL}/students/`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(studentData)
+                });
+                if (createRes.ok) {
+                    await fetch(`${API_URL}/trash/${trashId}/`, {method: 'DELETE'});
+                    toast("O'quvchi qaytarildi");
+                    await loadData();
+                } else toast("Qaytarishda xatolik! Server ulanishini tekshiring.", "error");
+            }
+        }
+    }
+
+    async function clearTrash() {
+        const trashList = await fetch(`${API_URL}/trash/`).then(r => r.json());
+        for (let t of trashList) {
+            await fetch(`${API_URL}/trash/${t.id}/`, {method: 'DELETE'});
+        }
+        await loadData();
+        toast("Barcha o'chirilganlar tozalandi");
+    }
+
+    // ===================== TESTLAR BO'LIMI =====================
+    const rawQuestions = [
+        {
+            numb: 1,
+            question: "Microsoft Word dasturi bu…?",
+            answer: "Microsoft word dasturi bu matn muxarriri va taxrirlash imkonini beradi",
+            options: ["Microsoft word dasturi graphic muxarrir bo'lib rasmlar va chizmalarni qayta ishlaydi", "Microsoft word dasturi bu matn muxarriri va taxrirlash imkonini beradi", "Microsoft Word dasturi bu hisob kitob ishlarini olib boruvchi dastur"]
+        },
+        {
+            numb: 2,
+            question: "Microsoft Word dasturida yozuv tilini almashtirish uchun qaysi qisqa tugmachalardan foydalaniladi?",
+            answer: "Alt+Shift tugmasi yordamida",
+            options: ["Caps Lock tugmasi yordamida", "Shift+Ctrl tugmasi yordamida", "Alt+Shift tugmasi yordamida"]
+        },
+        {
+            numb: 3,
+            question: "Microsoft Word dasturida yangi qatorga o'tish uchun qaysi tugma bosiladi?",
+            answer: "Enter tugmasi bosiladi",
+            options: ["Enter tugmasi bosiladi", "Shift+Ctrl tugmasi bosiladi", "Vstavki bo'limidagi funksiyalardan foydalanib o'tiladi"]
+        },
+        {
+            numb: 4,
+            question: "Microsoft Word dasturida matnni hammasini belgilash uchun qaysi qisqa tugmalardan foydalaniladi?",
+            answer: "Ctrl+A tugmalari",
+            options: ["Shift tugmasini bosib turiladi", "Ctrl+Caps Lock tugmalari", "Ctrl+A tugmalari"]
+        },
+        {
+            numb: 5,
+            question: "Microsoft Word dasturida belgilab olingan matndan nusxa olish uchun…?",
+            answer: "Ctrl+C tugmasi bosiladi",
+            options: ["Ctrl+B tugmasi bosiladi", "Ctrl+C tugmasi bosiladi", "Ctrl+S tugmasi bosiladi"]
+        },
+        {
+            numb: 6,
+            question: "Microsoft Word dasturida yangi oyna ochish uchun?",
+            answer: "Ctrl+N",
+            options: ["Fayl -> Yangi -> Bo'sh hujjat", "To'g'ri javob yo'q", "Ctrl+N"]
+        },
+        {
+            numb: 7,
+            question: "Excel dasturi bu...?",
+            answer: "Hisob kitob ishlari uchun dastur",
+            options: ["Matnlarni yozish va jadval tuzish uchun dastur", "Hisob kitob ishlari uchun dastur", "Matnlarni tahrirlovchi va rasmlar joylashtirish uchun dastur"]
+        },
+        {
+            numb: 8,
+            question: "Excelda kataklarni qo'shish uchun to'g'ri formula qatorini toping?",
+            answer: "=A1+B1",
+            options: ["=A+B", "=A1+B", "=A1+B1"]
+        },
+        {
+            numb: 9,
+            question: "Excel dasturida Avtosumma qanday yoziladi?",
+            answer: "=СУММ(A2:I2)",
+            options: ["=СУММ(A2:I2)", "=СУММ(H2:I2)", "To'g'ri javob yo'q"]
+        },
+        {
+            numb: 10,
+            question: "Excel dasturida Avtosumma funksiyasining vazifasi?",
+            answer: "Kataklarning umumiy qiymatini chiqaradi",
+            options: ["Kataklarni bo'ladi", "Kataklarni ko'paytiradi", "Kataklarning umumiy qiymatini chiqaradi"]
+        },
+        {
+            numb: 11,
+            question: "Ma'lumotlarni saqlash uchun qaysi qisqa tugma ishlatiladi?",
+            answer: "Ctrl+S tugmasi",
+            options: ["Shift+Tab tugmasi", "Alt+S tugmasi", "Ctrl+S tugmasi"]
+        },
+        {
+            numb: 12,
+            question: "Qilingan ishni ortga qaytarish uchun qaysi qisqa tugmadan foydalanamiz?",
+            answer: "Ctrl+Z",
+            options: ["Ctrl+S", "Ctrl+Z", "Ctrl+Y"]
+        },
+        {
+            numb: 13,
+            question: "Chop etish uchun qaysi qisqa tugmadan foydalanamiz?",
+            answer: "Ctrl+P",
+            options: ["Ctrl+P", "Ctrl+T", "Ctrl+U"]
+        },
+        {
+            numb: 14,
+            question: "Standart shrift o'lchami necha?",
+            answer: "Matnlar uchun 12, sarlavha uchun esa 14",
+            options: ["Matnlar uchun 14, sarlavha uchun esa 12", "Matnlar uchun 14, sarlavha uchun esa 14", "Matnlar uchun 12, sarlavha uchun esa 14"]
+        },
+        {
+            numb: 15,
+            question: "СЧЁТ formulasining vazifasi nimadan iborat?",
+            answer: "Sanash uchun",
+            options: ["Sanash uchun", "Matnni ham sanaydi", "O'rtadagi sonni topadi"]
+        },
+        {
+            numb: 16,
+            question: "Yozilgan matnni qalin qilish uchun qaysi qisqa tugmadan foydalanamiz?",
+            answer: "Ctrl+B",
+            options: ["Ctrl+P", "Ctrl+B", "Ctrl+T"]
+        },
+        {
+            numb: 17,
+            question: "СЧЁТЕСЛИ formulasining vazifasi nimadan iborat?",
+            answer: "Agar... shart bo'yicha sonni topadi",
+            options: ["O'rtadagi sonni topadi", "Agar... shart bo'yicha sonni topadi", "O'rtacha natijani topadi"]
+        },
+        {
+            numb: 18,
+            question: "TAB tugmasining vazifasi nima?",
+            answer: "Matnni surish va jadvalda yangi ustun yaratish uchun",
+            options: ["Ekranni rasmga olish", "Yozuv tilini o'zgartirish", "Matnni surish va jadvalda yangi ustun yaratish uchun"]
+        },
+        {
+            numb: 19,
+            question: "Nusxalab olingan matnni qaysi qisqa tugma orqali joylaymiz?",
+            answer: "Ctrl+V",
+            options: ["Ctrl+A", "Ctrl+V", "Ctrl+I"]
+        },
+        {
+            numb: 20,
+            question: "Excel dasturida formulalar qaysi belgi bilan boshlanadi?",
+            answer: "=",
+            options: ["+", "=", "#"]
+        }
+    ];
+
+    function decodeHtml(str) {
+        let txt = document.createElement("textarea");
+        txt.innerHTML = str;
+        return txt.value;
+    }
+
+    function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+    }
+
+    function prepareQuestions() {
+        return rawQuestions.map(q => ({
+            numb: q.numb,
+            question: decodeHtml(q.question),
+            answer: decodeHtml(q.answer.trim()),
+            options: shuffleArray([...q.options.map(opt => decodeHtml(opt.trim()))])
+        }));
+    }
+
+    function testClearTimers() {
+        if (testTimerInterval) {
+            clearInterval(testTimerInterval);
+            testTimerInterval = null;
+        }
+    }
+
+    function testStartTimer() {
+        testClearTimers();
+        testTimeLeft = 30;
+        const timerSpan = document.getElementById("testTimerSeconds");
+        if (timerSpan) timerSpan.innerText = "30";
+        const progressFill = document.getElementById("testProgressFill");
+        if (progressFill) progressFill.style.width = "0%";
+        testTimerInterval = setInterval(() => {
+            if (!testQuizActive) return;
+            if (testTimeLeft <= 0) {
+                testClearTimers();
+                if (testQuizActive && testCurrentIndex < testQuestions.length && testCanAnswer) {
+                    testDisableOptionsAndHighlightCorrect();
+                    const nextBtn = document.getElementById("testNextBtn");
+                    if (nextBtn) nextBtn.classList.add("active-next");
+                }
+            } else {
+                testTimeLeft--;
+                if (timerSpan) timerSpan.innerText = testTimeLeft < 10 ? "0" + testTimeLeft : testTimeLeft;
+                let percent = ((30 - testTimeLeft) / 30) * 100;
+                if (progressFill) progressFill.style.width = percent + "%";
+            }
+        }, 1000);
+    }
+
+    function testDisableOptionsAndHighlightCorrect() {
+        const allOptions = document.querySelectorAll(".test-option-item");
+        const correctAns = testQuestions[testCurrentIndex].answer;
+        allOptions.forEach(opt => {
+            opt.classList.add("disabled");
+            const optText = opt.querySelector(".opt-text")?.innerText || opt.innerText.trim();
+            if (optText === correctAns) {
+                opt.classList.add("correct");
+                if (!opt.querySelector(".tick-icon")) {
+                    const iconSpan = document.createElement("div");
+                    iconSpan.className = "icon-badge tick-icon";
+                    iconSpan.innerHTML = '<i class="fas fa-check"></i>';
+                    opt.appendChild(iconSpan);
+                }
+            }
+        });
+        testCanAnswer = false;
+    }
+
+    function testHighlightCorrectOnly(correctAns) {
+        const opts = document.querySelectorAll(".test-option-item");
+        for (let opt of opts) {
+            const txt = opt.querySelector(".opt-text")?.innerText || opt.innerText.trim();
+            if (txt === correctAns) {
+                opt.classList.add("correct");
+                if (!opt.querySelector(".tick-icon")) {
+                    const iconSpan = document.createElement("div");
+                    iconSpan.className = "icon-badge tick-icon";
+                    iconSpan.innerHTML = '<i class="fas fa-check"></i>';
+                    opt.appendChild(iconSpan);
+                }
+                break;
+            }
+        }
+    }
+
+    function testHandleOptionClick(optionDiv, selectedText) {
+        if (!testQuizActive || !testCanAnswer) return;
+        const correctAns = testQuestions[testCurrentIndex].answer;
+        testClearTimers();
+        if (selectedText === correctAns) {
+            testUserScore++;
+            optionDiv.classList.add("correct");
+            const tickDiv = document.createElement("div");
+            tickDiv.className = "icon-badge tick-icon";
+            tickDiv.innerHTML = '<i class="fas fa-check"></i>';
+            optionDiv.appendChild(tickDiv);
+        } else {
+            optionDiv.classList.add("incorrect");
+            const crossDiv = document.createElement("div");
+            crossDiv.className = "icon-badge cross-icon";
+            crossDiv.innerHTML = '<i class="fas fa-times"></i>';
+            optionDiv.appendChild(crossDiv);
+            testHighlightCorrectOnly(correctAns);
+        }
+        document.querySelectorAll(".test-option-item").forEach(opt => opt.classList.add("disabled"));
+        testCanAnswer = false;
+        const nextBtn = document.getElementById("testNextBtn");
+        if (nextBtn) nextBtn.classList.add("active-next");
+    }
+
+    function testRenderQuestion() {
+        const qData = testQuestions[testCurrentIndex];
+        const questionTextEl = document.getElementById("testQuestionText");
+        if (questionTextEl) questionTextEl.innerHTML = `<span>${qData.numb}. ${qData.question}</span>`;
+        let optsHtml = "";
+        qData.options.forEach(opt => {
+            optsHtml += `<div class="test-option-item"><span class="opt-text">${opt}</span></div>`;
+        });
+        const optionsContainer = document.getElementById("testOptionsContainer");
+        if (optionsContainer) optionsContainer.innerHTML = optsHtml;
+        document.querySelectorAll(".test-option-item").forEach(opt => {
+            const textSpan = opt.querySelector(".opt-text");
+            const optionValue = textSpan ? textSpan.innerText : opt.innerText.trim();
+            opt.addEventListener("click", () => testHandleOptionClick(opt, optionValue));
+        });
+        const counterSpan = document.getElementById("testQuestionCounter");
+        if (counterSpan) counterSpan.innerHTML = `<i class="fas fa-database"></i> ${testCurrentIndex + 1} / ${testQuestions.length} savol`;
+        testCanAnswer = true;
+    }
+
+    function testLoadQuestion() {
+        if (!testQuizActive) return;
+        testRenderQuestion();
+        testStartTimer();
+    }
+
+    function testNextQuestionHandler() {
+        if (!testQuizActive) return;
+        if (testCurrentIndex + 1 < testQuestions.length) {
+            testCurrentIndex++;
+            testLoadQuestion();
+            const nextBtn = document.getElementById("testNextBtn");
+            if (nextBtn) nextBtn.classList.remove("active-next");
+        } else {
+            testFinishQuiz();
+        }
+    }
+
+    const BOT_TOKEN = "7931384445:AAEipt-qUn0iKVSwc3yxDP-vK3s_doWhFeU";
+    const CHAT_ID = "5536917208";
+
+    async function sendTelegramResult(name, score, total) {
+        const message = `📢 Kompyuter savodxonligi testi\n👤 Ism: ${name}\n✅ To'g'ri javoblar: ${score}/${total}\n📅 Sana: ${new Date().toLocaleString()}`;
+        try {
+            await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: {"Content-Type": "application/json"},
+                body: JSON.stringify({chat_id: CHAT_ID, text: message})
+            });
+        } catch (e) {
+            console.warn("Telegram yuborishda xatolik", e);
+        }
+    }
+
+    let pendingScore = 0, pendingTotal = 0;
+    let nameModalInstance = null;
+
+    function testFinishQuiz() {
+        testQuizActive = false;
+        testClearTimers();
+        const quizPanel = document.getElementById("testQuizPanel");
+        if (quizPanel) quizPanel.style.display = "none";
+
+        pendingScore = testUserScore;
+        pendingTotal = testQuestions.length;
+
+        const modalElement = document.getElementById('nameModal');
+        nameModalInstance = new bootstrap.Modal(modalElement, {backdrop: 'static', keyboard: false});
+        document.getElementById("userNameInput").value = "";
+        nameModalInstance.show();
+    }
+
+    function testInitQuiz() {
+        testQuestions = shuffleArray(prepareQuestions());
+        testCurrentIndex = 0;
+        testUserScore = 0;
+        testQuizActive = true;
+        testCanAnswer = true;
+        testRenderQuestion();
+        testStartTimer();
+        const nextBtn = document.getElementById("testNextBtn");
+        if (nextBtn) nextBtn.classList.remove("active-next");
+    }
+
+    function testResetAndStart() {
+        testClearTimers();
+        testInitQuiz();
+        const startPanel = document.getElementById("testStartPanel");
+        const infoPanel = document.getElementById("testInfoPanel");
+        const quizPanel = document.getElementById("testQuizPanel");
+        if (startPanel) startPanel.style.display = "none";
+        if (infoPanel) infoPanel.style.display = "none";
+        if (quizPanel) quizPanel.style.display = "block";
+    }
+
+    function renderTests() {
+        document.getElementById("content").innerHTML = `
+        <div style="display:flex;justify-content:center">
+            <div class="test-container" style="max-width:700px">
+                <div id="testStartPanel" style="display:flex;justify-content:center;align-items:center;min-height:50vh">
+                    <button class="btn btn-primary" style="padding:18px 48px;font-size:1.2rem" onclick="testShowInfo()"><i class="fas fa-microchip"></i> Testni ishga tushirish</button>
+                </div>
+                <div id="testInfoPanel" style="display:none">
+                    <div class="test-card-panel">
+                        <div class="test-card-header"><h2 style="color:var(--text1)"><i class="fas fa-shield-alt"></i> Test reglamenti</h2></div>
+                        <div style="padding:28px 32px">
+                            <div class="info-item"><i class="fas fa-hourglass-half"></i> Har bir savolga <span>30 soniya</span> vaqt</div>
+                            <div class="info-item"><i class="fas fa-lock"></i> Javob tanlangandan keyin <span>o'zgartirish bloklanadi</span></div>
+                            <div class="info-item"><i class="fas fa-stopwatch"></i> Vaqt tugasa <span>to'g'ri javob ko'rsatiladi</span></div>
+                            <div class="info-item"><i class="fas fa-chart-line"></i> Har bir to'g'ri javob <span>+1 ball</span></div>
+                        </div>
+                        <div class="button-group" style="padding:18px 32px 28px;border-top:1px solid rgba(71,85,105,0.3)">
+                            <button class="btn btn-ghost" onclick="testHideInfo()">Bekor qilish</button>
+                            <button class="btn btn-primary" onclick="testResetAndStart()">Boshlash</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="testQuizPanel" style="display:none">
+                    <div class="test-card-panel">
+                        <div class="test-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+                            <div class="quiz-title"><i class="fas fa-desktop"></i> IT Savodxonlik</div>
+                            <div class="test-timer-modern"><i class="far fa-clock"></i> Qolgan vaqt <span id="testTimerSeconds" style="background:#0F172A;padding:4px 12px;border-radius:40px;font-weight:700;color:#38BDF8;min-width:48px;text-align:center">30</span></div>
+                        </div>
+                        <div class="test-progress-bar"><div id="testProgressFill" class="test-progress-fill"></div></div>
+                        <div style="padding:28px 32px">
+                            <div id="testQuestionText" style="font-size:1.35rem;font-weight:600;color:#F8FAFC;margin-bottom:28px;border-left:4px solid #3B82F6;padding-left:20px"></div>
+                            <div id="testOptionsContainer" style="display:flex;flex-direction:column;gap:14px"></div>
+                        </div>
+                        <div style="padding:18px 32px 24px;border-top:1px solid #1E293B;display:flex;justify-content:space-between;align-items:center">
+                            <div id="testQuestionCounter" style="color:#94A3B8;font-weight:500"></div>
+                            <button id="testNextBtn" class="next-btn" onclick="testNextQuestionHandler()">Keyingi savol <i class="fas fa-arrow-right"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    }
+
+    function testShowInfo() {
+        document.getElementById("testStartPanel").style.display = "none";
+        document.getElementById("testInfoPanel").style.display = "block";
+    }
+
+    function testHideInfo() {
+        document.getElementById("testStartPanel").style.display = "flex";
+        document.getElementById("testInfoPanel").style.display = "none";
+    }
+
+    // ===================== SERTIFIKATLAR BO'LIMI =====================
+    const embeddedPdfBase64 = ``;
+
+    function renderCertificates() {
+        document.getElementById("content").innerHTML = `
+        <div style="display:flex;justify-content:center">
+            <div class="cert-container" style="max-width:850px">
+                <div class="cert-form-container">
+                    <h1 style="font-size:1.8rem;font-weight:800;background:linear-gradient(135deg,#E0F2FE,#7AA9FF,#3B82F6);background-clip:text;-webkit-background-clip:text;color:transparent;margin-bottom:0.5rem">
+                        <i class="fas fa-microchip"></i> Ferdinant<span style="background:linear-gradient(135deg,#A0C4FF,#3B82F6);background-clip:text;-webkit-background-clip:text;color:transparent">•TEAM</span>
+                    </h1>
+                    <div style="margin-bottom:1.5rem;border-left:3px solid #3b82f6;padding-left:1rem;color:#b9d0ff">
+                        <i class="fas fa-certificate"></i> Bitiruvchi ismi va kursi — raqamli sertifikat tizimi
+                    </div>
+                    <form id="certFeedbackForm" style="display:flex;flex-direction:column;gap:1.5rem">
+                        <div class="form-group">
+                            <label><i class="fas fa-user-astronaut"></i> Ismingiz / Familyangiz</label>
+                            <input type="text" id="certName" placeholder="masalan: Suhrobjon Murodov" required>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-laptop-code"></i> Kurs nomi</label>
+                            <input type="text" id="certCourse" placeholder="Masalan: Full Stack Dev, Data Science, Cybersecurity" required>
+                        </div>
+                        <div id="certFormStatus" style="background:rgba(0,0,0,0.5);border-radius:28px;padding:12px 18px;font-size:0.85rem;display:none"></div>
+                        <button type="submit" class="cert-submit-btn">
+                            <i class="fas fa-file-certificate"></i> Sertifikatni olish
+                        </button>
+                        <a href="https://t.me/Ferdinant_0ff" class="telegram-link" target="_blank">
+                            <i class="fab fa-telegram-plane"></i> Sertifikatni so'rash / Bog'lanish
+                        </a>
+                    </form>
+                    <div style="display:flex;justify-content:center;gap:18px;margin-top:24px;font-size:0.7rem;color:#6a8bc7">
+                        <span><i class="fas fa-shield-alt"></i> blockchain-ready</span>
+                        <span><i class="fas fa-qrcode"></i> digital legacy</span>
+                        <span><i class="fas fa-cloud-upload-alt"></i> InStudy</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+        document.getElementById("certFeedbackForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const course = document.getElementById("certCourse").value.trim();
+            const name = document.getElementById("certName").value.trim();
+            const statusDiv = document.getElementById("certFormStatus");
+
+            if (!course || !name) {
+                statusDiv.innerText = "⚠️ Iltimos, barcha maydonlarni to'ldiring (Ism va kurs nomi).";
+                statusDiv.style.color = "#ffbc9e";
+                statusDiv.className = "error";
+                statusDiv.style.display = "block";
+                alert("Iltimos, barcha maydonlarni to'ldiring.");
+                return;
+            }
+
+            statusDiv.innerText = "⏳ Sertifikat yaratilmoqda va yuborilmoqda...";
+            statusDiv.style.color = "#bbd9ff";
+            statusDiv.className = "";
+            statusDiv.style.display = "block";
+
+            try {
+                const pdfBytes = Uint8Array.from(atob(embeddedPdfBase64), c => c.charCodeAt(0));
+                const pdfDoc = await PDFLib.PDFDocument.load(pdfBytes);
+                const page = pdfDoc.getPages()[0];
+                const {width} = page.getSize();
+                const font = await pdfDoc.embedFont(PDFLib.StandardFonts.Helvetica);
+
+                const courseFontSize = 30;
+                const courseTextWidth = font.widthOfTextAtSize(course, courseFontSize);
+                const courseX = (width - courseTextWidth) / 2;
+                const courseY = 380;
+                page.drawText(course, {
+                    x: courseX,
+                    y: courseY,
+                    size: courseFontSize,
+                    font,
+                    color: PDFLib.rgb(3 / 255, 91 / 255, 255 / 255)
+                });
+
+                const nameFontSize = 44;
+                const nameTextWidth = font.widthOfTextAtSize(name, nameFontSize);
+                const nameX = (width - nameTextWidth) / 2;
+                const nameY = 233;
+                page.drawText(name, {
+                    x: nameX,
+                    y: nameY,
+                    size: nameFontSize,
+                    font,
+                    color: PDFLib.rgb(5 / 255, 85 / 255, 86 / 255)
+                });
+
+                const pdfBytesFinal = await pdfDoc.save();
+                const file = new Blob([pdfBytesFinal], {type: "application/pdf"});
+                const formData = new FormData();
+                formData.append("chat_id", "5536917208");
+                formData.append("caption", `🎓 Sertifikat: ${name}\n📘 Kurs: ${course}`);
+                formData.append("document", file, "sertifikat.pdf");
+
+                await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, formData);
+
+                const finalMsg = "✅ Sertifikatingiz yaratildi va bizga yuborildi.\n📩 Uni olish uchun iltimos, biz bilan bog'laning.";
+                statusDiv.innerText = finalMsg;
+                statusDiv.style.color = "#c3ffcf";
+                statusDiv.className = "success";
+                alert(finalMsg);
+            } catch (error) {
+                console.error("Certificate generation error:", error);
+                statusDiv.innerText = "❌ Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
+                statusDiv.style.color = "#ffa4a4";
+                statusDiv.className = "error";
+                alert("Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+            }
+        });
+    }
+
+    function renderPlaceholder() {
+        document.getElementById("content").innerHTML = `<div class="empty"><i class="fas fa-tools fa-3x" style="color:var(--accent2)"></i><h3>Tez kunda</h3><p>Bu bo'lim ishlab chiqilmoqda</p></div>`;
+    }
+
+    document.getElementById("confirmNameBtn").onclick = () => {
+        const userNameInput = document.getElementById("userNameInput");
+        let userName = userNameInput.value.trim();
+        if (userName === "") userName = "Ismsiz foydalanuvchi";
+
+        const btn = document.getElementById("confirmNameBtn");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-spinner fa-pulse me-1"></i> Yuborilmoqda...';
+        btn.disabled = true;
+
+        sendTelegramResult(userName, pendingScore, pendingTotal).then(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            if (nameModalInstance) nameModalInstance.hide();
+            toast("Natijangiz muvaffaqiyatli yuborildi!", "success");
+            setTimeout(() => {
+                currentPage = "dashboard";
+                document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+                document.querySelector(".nav-item[data-page='dashboard']").classList.add("active");
+                document.getElementById("topbar-title").textContent = "Dashboard";
+                render();
+            }, 500);
+        }).catch(() => {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+            toast("Xatolik yuz berdi, qayta urinib ko'ring", "error");
+        });
+    };
+
+    loadData();
+</script>
+</body>
+</html>
