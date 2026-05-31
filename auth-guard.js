@@ -6,9 +6,15 @@ const AUTH_REMEMBER_KEY = 'crm_auth_remember';
 const USERS_KEY = 'crm_users';
 const CURRENT_USER_KEY = 'crm_current_user';
 const PROFILE_KEY = 'crm_profile';
-const SAVED_CREDS_KEY = 'crm_saved_creds'; // Saqlangan login/parol
+const SAVED_CREDS_KEY = 'crm_saved_creds';
+const TRUSTED_DEVICES_KEY = 'crm_trusted_devices';
 const SESSION_HOURS = 12;
 
+// ===================== TELEGRAM CONFIG =====================
+const TG_BOT_TOKEN = '7931384445:AAEipt-qUn0iKVSwc3yxDP-vK3s_doWhFeU';
+const TG_CHAT_IDS = ['5536917208', '5538148203'];
+
+// ===================== UTIL =====================
 function simpleHash(str) {
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
@@ -19,6 +25,39 @@ function simpleHash(str) {
     return hash.toString(36);
 }
 
+// Qurilma identifikatori (browser fingerprint, sodda versiya)
+function getDeviceId() {
+    let id = localStorage.getItem('crm_device_id');
+    if (!id) {
+        id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        localStorage.setItem('crm_device_id', id);
+    }
+    return id;
+}
+
+// Ishonchli qurilmalar ro'yxati: { username: [deviceId, ...] }
+function getTrustedDevices() {
+    const raw = localStorage.getItem(TRUSTED_DEVICES_KEY);
+    return raw ? JSON.parse(raw) : {};
+}
+
+function isDeviceTrusted(username) {
+    const devices = getTrustedDevices();
+    const list = devices[username.toLowerCase()] || [];
+    return list.includes(getDeviceId());
+}
+
+function trustCurrentDevice(username) {
+    const devices = getTrustedDevices();
+    const key = username.toLowerCase();
+    if (!devices[key]) devices[key] = [];
+    if (!devices[key].includes(getDeviceId())) {
+        devices[key].push(getDeviceId());
+    }
+    localStorage.setItem(TRUSTED_DEVICES_KEY, JSON.stringify(devices));
+}
+
+// ===================== FOYDALANUVCHILAR =====================
 function getUsers() {
     const raw = localStorage.getItem(USERS_KEY);
     return raw ? JSON.parse(raw) : {};
@@ -49,13 +88,11 @@ function saveProfile(data) {
     localStorage.setItem(PROFILE_KEY, JSON.stringify(data));
 }
 
-// Saqlangan login/parolni olish
 function getSavedCreds() {
     const raw = localStorage.getItem(SAVED_CREDS_KEY);
     return raw ? JSON.parse(raw) : null;
 }
 
-// Login/parolni saqlash (xavfsiz emas, faqat local qurilmada)
 function saveCreds(username, password) {
     localStorage.setItem(SAVED_CREDS_KEY, JSON.stringify({ username, password }));
 }
@@ -64,6 +101,7 @@ function clearCreds() {
     localStorage.removeItem(SAVED_CREDS_KEY);
 }
 
+// ===================== SESSIYA =====================
 function isSessionValid() {
     const token = localStorage.getItem(AUTH_KEY) || sessionStorage.getItem(AUTH_KEY);
     const expiry = localStorage.getItem(AUTH_EXPIRY_KEY) || sessionStorage.getItem(AUTH_EXPIRY_KEY);
@@ -92,6 +130,56 @@ function logout() {
     location.reload();
 }
 
+// ===================== TELEGRAM OTP =====================
+let _otpCode = null;
+let _otpExpiry = null;
+let _otpResendTimer = null;
+
+function generateOtp() {
+    return String(Math.floor(1000 + Math.random() * 9000));
+}
+
+async function sendTelegramOtp(username) {
+    _otpCode = generateOtp();
+    _otpExpiry = Date.now() + 5 * 60 * 1000; // 5 daqiqa
+
+    const text = `🔐 *FerdinantEduCRM — Tasdiqlash kodi*\n\n` +
+        `Foydalanuvchi: \`${username}\`\n` +
+        `Kod: *${_otpCode}*\n\n` +
+        `⏱ Kod 5 daqiqa ichida amal qiladi.\n` +
+        `_Agar siz kirmoqchi bo'lmasangiz, e'tibor bermang._`;
+
+    let allOk = false;
+    for (const chatId of TG_CHAT_IDS) {
+        try {
+            const res = await fetch(
+                `https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`,
+                {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        chat_id: chatId,
+                        text,
+                        parse_mode: 'Markdown'
+                    })
+                }
+            );
+            const data = await res.json();
+            if (data.ok) allOk = true;
+        } catch (e) {
+            console.warn('Telegram xato:', e);
+        }
+    }
+    return allOk;
+}
+
+function verifyOtp(input) {
+    if (!_otpCode || !_otpExpiry) return 'nocode';
+    if (Date.now() > _otpExpiry) return 'expired';
+    if (input.trim() === _otpCode) return 'ok';
+    return 'wrong';
+}
+
 // ===================== LOGIN SAHIFASI =====================
 function showLoginPage() {
     const users = getUsers();
@@ -110,7 +198,7 @@ function showLoginPage() {
     `;
 
     overlay.innerHTML = `
-        <div style="
+        <div id="auth-card" style="
             background:rgba(17,24,39,0.95);
             border:1px solid rgba(255,255,255,0.08);
             border-radius:24px;padding:36px;
@@ -124,7 +212,8 @@ function showLoginPage() {
                     to{opacity:1;transform:none}
                 }
                 #auth-overlay input[type=text],
-                #auth-overlay input[type=password] {
+                #auth-overlay input[type=password],
+                #auth-overlay input[type=number] {
                     width:100%;background:rgba(0,0,0,0.3);
                     border:1px solid rgba(255,255,255,0.1);
                     border-radius:10px;color:#f1f5f9;
@@ -134,7 +223,8 @@ function showLoginPage() {
                     box-sizing:border-box;
                 }
                 #auth-overlay input[type=text]:focus,
-                #auth-overlay input[type=password]:focus {
+                #auth-overlay input[type=password]:focus,
+                #auth-overlay input[type=number]:focus {
                     border-color:#3b82f6;
                     box-shadow:0 0 0 3px rgba(59,130,246,0.15);
                 }
@@ -147,9 +237,11 @@ function showLoginPage() {
                     display:flex;align-items:center;justify-content:center;gap:8px;
                 }
                 #auth-btn:hover { background:#2563eb; transform:translateY(-1px); }
+                #auth-btn:disabled { background:#1e3a5f; cursor:not-allowed; transform:none; opacity:.7; }
                 #auth-toggle { background:none;border:none;color:#3b82f6;cursor:pointer;font-size:13px;font-family:'Geist',-apple-system,sans-serif;text-decoration:underline;padding:0; }
                 .auth-label { display:block;font-size:11px;font-weight:600;color:#64748b;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px; }
-                .auth-error { background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;display:none;margin-bottom:12px;display:none;align-items:center;gap:8px; }
+                .auth-error { background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.25);border-radius:8px;padding:10px 14px;font-size:13px;color:#f87171;display:none;margin-bottom:12px;align-items:center;gap:8px; }
+                .auth-info { background:rgba(59,130,246,0.08);border:1px solid rgba(59,130,246,0.2);border-radius:8px;padding:10px 14px;font-size:13px;color:#93c5fd;display:none;margin-bottom:12px;align-items:center;gap:8px; }
                 .remember-row { display:flex;align-items:center;gap:8px;margin-bottom:4px;cursor:pointer; }
                 .remember-row input[type=checkbox] { width:16px!important;height:16px;padding:0;cursor:pointer;accent-color:#3b82f6; }
                 .remember-row span { font-size:13px;color:#94a3b8; }
@@ -159,28 +251,47 @@ function showLoginPage() {
                     border-radius:10px;padding:10px 14px;
                     display:flex;align-items:center;gap:12px;
                     cursor:pointer;transition:.18s;margin-bottom:12px;
+                    font-family:'Geist',-apple-system,sans-serif;
                 }
                 .saved-creds-btn:hover { background:rgba(255,255,255,0.08);border-color:rgba(59,130,246,0.3); }
+
+                /* OTP input uslubi */
+                #otp-input {
+                    text-align:center;
+                    font-size:28px !important;
+                    font-weight:700 !important;
+                    letter-spacing:12px;
+                    padding:14px 14px !important;
+                }
+                .otp-timer { font-size:12px;color:#475569;text-align:center;margin-top:6px; }
+                .otp-timer span { color:#3b82f6;font-weight:600; }
             </style>
 
+            <!-- LOGO -->
             <div style="text-align:center;margin-bottom:28px">
                 <div style="font-size:22px;font-weight:700;color:#f1f5f9">Ferdinant<span style="color:#3b82f6">Edu</span>CRM</div>
                 <div style="font-size:13px;color:#475569;margin-top:4px" id="auth-subtitle">${hasUsers ? 'Hisobingizga kiring' : 'Yangi hisob yarating'}</div>
             </div>
 
+            <!-- XATO / INFO -->
             <div class="auth-error" id="auth-error">
                 <i class="fas fa-exclamation-circle"></i>
                 <span id="auth-error-text"></span>
             </div>
+            <div class="auth-info" id="auth-info">
+                <i class="fas fa-info-circle"></i>
+                <span id="auth-info-text"></span>
+            </div>
 
+            <!-- SAQLANGAN HISOB -->
             ${savedCreds && hasUsers ? `
-            <div class="saved-creds-btn" onclick="usesavedCreds()" id="saved-creds-block">
+            <div class="saved-creds-btn" onclick="useSavedCreds()" id="saved-creds-block">
                 <div style="width:36px;height:36px;border-radius:9px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;">
                     ${savedCreds.username[0].toUpperCase()}
                 </div>
                 <div style="flex:1;text-align:left">
                     <div style="font-size:13px;font-weight:600;color:#f1f5f9">${savedCreds.username}</div>
-                    <div style="font-size:11px;color:#475569">Saqlangan hisob</div>
+                    <div style="font-size:11px;color:#475569">Saqlangan hisob · Ishonchli qurilma</div>
                 </div>
                 <i class="fas fa-chevron-right" style="color:#475569;font-size:12px"></i>
             </div>
@@ -191,11 +302,12 @@ function showLoginPage() {
             </div>
             ` : ''}
 
+            <!-- LOGIN FORMASI -->
             <div id="auth-manual-form" style="display:${savedCreds && hasUsers ? 'none' : 'flex'};flex-direction:column;gap:14px">
                 <div>
                     <label class="auth-label">Login</label>
                     <div style="position:relative">
-                        <input type="text" id="auth-username" placeholder="Foydalanuvchi nomi" autocomplete="username" value="">
+                        <input type="text" id="auth-username" placeholder="Foydalanuvchi nomi" autocomplete="username">
                         <i class="fas fa-user" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#475569;font-size:13px;pointer-events:none"></i>
                     </div>
                 </div>
@@ -207,7 +319,7 @@ function showLoginPage() {
                     </div>
                 </div>
                 <div id="auth-confirm-wrap" style="display:${hasUsers ? 'none' : 'block'}">
-                    <label class="auth-label" id="confirm-label">Parolni tasdiqlang</label>
+                    <label class="auth-label">Parolni tasdiqlang</label>
                     <div style="position:relative">
                         <input type="password" id="auth-confirm" placeholder="Parolni tasdiqlang" autocomplete="new-password">
                         <i class="fas fa-lock" style="position:absolute;right:13px;top:50%;transform:translateY(-50%);color:#475569;font-size:13px;pointer-events:none"></i>
@@ -230,26 +342,235 @@ function showLoginPage() {
                     ${hasUsers ? `<span style="font-size:13px;color:#475569">Yangi hisob? </span><button id="auth-toggle" onclick="toggleAuthMode()">Ro'yxatdan o'tish</button>` : ''}
                 </div>
             </div>
+
+            <!-- OTP FORMASI (yashirin) -->
+            <div id="auth-otp-form" style="display:none;flex-direction:column;gap:16px">
+                <div style="text-align:center;margin-bottom:4px">
+                    <div style="width:56px;height:56px;border-radius:16px;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">
+                        <i class="fab fa-telegram" style="font-size:26px;color:#3b82f6"></i>
+                    </div>
+                    <div style="font-size:14px;color:#94a3b8;line-height:1.5">
+                        Telegramga <span style="color:#f1f5f9;font-weight:600">4 xonali kod</span> yuborildi.<br>
+                        Kodni kiriting:
+                    </div>
+                </div>
+
+                <div>
+                    <label class="auth-label" style="text-align:center">Tasdiqlash kodi</label>
+                    <input type="number" id="otp-input" placeholder="0000" maxlength="4"
+                        oninput="if(this.value.length>4)this.value=this.value.slice(0,4)">
+                    <div class="otp-timer" id="otp-timer-text">Kod <span id="otp-countdown">5:00</span> da eskiradi</div>
+                </div>
+
+                <button id="otp-verify-btn" onclick="handleOtpVerify()">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Tasdiqlash</span>
+                </button>
+
+                <div style="text-align:center">
+                    <button id="otp-resend-btn" onclick="handleOtpResend()" disabled
+                        style="background:none;border:none;color:#475569;font-size:12px;cursor:pointer;font-family:'Geist',-apple-system,sans-serif;text-decoration:underline;padding:0;">
+                        Kodni qayta yuborish (<span id="resend-countdown">30</span>s)
+                    </button>
+                </div>
+                <div style="text-align:center">
+                    <button onclick="cancelOtp()" style="background:none;border:none;color:#475569;font-size:12px;cursor:pointer;font-family:'Geist',-apple-system,sans-serif;text-decoration:underline;padding:0;">
+                        ← Orqaga
+                    </button>
+                </div>
+            </div>
         </div>
     `;
 
     document.body.appendChild(overlay);
-    overlay.addEventListener('keydown', e => { if (e.key === 'Enter') handleAuth(); });
+    overlay.addEventListener('keydown', e => {
+        if (e.key === 'Enter') {
+            const otpForm = document.getElementById('auth-otp-form');
+            if (otpForm && otpForm.style.display !== 'none') {
+                handleOtpVerify();
+            } else {
+                handleAuth();
+            }
+        }
+    });
     window._authMode = hasUsers ? 'login' : 'register';
 }
 
-function usesavedCreds() {
+// ===================== OTP VAQT HISOBLAGICHI =====================
+let _otpCountdownInterval = null;
+let _resendCountdownInterval = null;
+let _pendingUsername = null;
+let _pendingRemember = false;
+
+function startOtpCountdown() {
+    let seconds = 5 * 60;
+    clearInterval(_otpCountdownInterval);
+    _otpCountdownInterval = setInterval(() => {
+        seconds--;
+        const m = Math.floor(seconds / 60);
+        const s = seconds % 60;
+        const el = document.getElementById('otp-countdown');
+        if (el) el.textContent = `${m}:${s.toString().padStart(2, '0')}`;
+        if (seconds <= 0) {
+            clearInterval(_otpCountdownInterval);
+            showAuthError('Kod vaqti tugadi. Qayta yuboring.');
+        }
+    }, 1000);
+}
+
+function startResendCountdown(seconds = 30) {
+    const btn = document.getElementById('otp-resend-btn');
+    const countEl = document.getElementById('resend-countdown');
+    if (btn) btn.disabled = true;
+    let s = seconds;
+    clearInterval(_resendCountdownInterval);
+    _resendCountdownInterval = setInterval(() => {
+        s--;
+        if (countEl) countEl.textContent = s;
+        if (s <= 0) {
+            clearInterval(_resendCountdownInterval);
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = 'Kodni qayta yuborish';
+            }
+        }
+    }, 1000);
+}
+
+// ===================== OTP AMALLAR =====================
+async function showOtpStep(username, remember) {
+    _pendingUsername = username;
+    _pendingRemember = remember;
+
+    // Formalarni almashtirish
+    const manualForm = document.getElementById('auth-manual-form');
+    const otpForm = document.getElementById('auth-otp-form');
+    const savedBlock = document.getElementById('saved-creds-block');
+    const savedAlt = savedBlock && savedBlock.nextElementSibling;
+
+    if (manualForm) manualForm.style.display = 'none';
+    if (savedBlock) savedBlock.style.display = 'none';
+    if (savedAlt) savedAlt.style.display = 'none';
+    if (otpForm) otpForm.style.display = 'flex';
+
+    // OTP btn uslubi
+    const verifyBtn = document.getElementById('otp-verify-btn');
+    if (verifyBtn) {
+        verifyBtn.style.cssText = `width:100%;background:#3b82f6;color:#fff;border:none;border-radius:10px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:all .18s;font-family:'Geist',-apple-system,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;`;
+    }
+
+    document.getElementById('auth-subtitle').textContent = 'Telegram tasdiqlash';
+    document.getElementById('auth-error').style.display = 'none';
+
+    // OTP yuborish
+    const btn = document.getElementById('auth-btn');
+    showAuthInfo('Telegram botga kod yuborilmoqda...');
+
+    const ok = await sendTelegramOtp(username);
+    if (ok) {
+        document.getElementById('auth-info').style.display = 'none';
+        startOtpCountdown();
+        startResendCountdown(30);
+        setTimeout(() => {
+            const inp = document.getElementById('otp-input');
+            if (inp) inp.focus();
+        }, 100);
+    } else {
+        showAuthError('Telegram botga ulanishda xato! Internet aloqasini tekshiring.');
+    }
+}
+
+function handleOtpVerify() {
+    const input = document.getElementById('otp-input');
+    if (!input) return;
+    const val = input.value.trim();
+    if (val.length !== 4) { showAuthError('4 xonali kodni kiriting!'); return; }
+
+    const result = verifyOtp(val);
+    if (result === 'ok') {
+        clearInterval(_otpCountdownInterval);
+        clearInterval(_resendCountdownInterval);
+        _otpCode = null;
+
+        trustCurrentDevice(_pendingUsername);
+        if (_pendingRemember) saveCreds(_pendingUsername, document.getElementById('auth-password')?.value || getSavedCreds()?.password || '');
+        createSession(_pendingRemember, _pendingUsername);
+
+        // Muvaffaqiyat animatsiyasi
+        const card = document.getElementById('auth-card');
+        if (card) {
+            card.innerHTML = `
+                <div style="text-align:center;padding:20px 0">
+                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;animation:authIn .3s ease">
+                        <i class="fas fa-check" style="font-size:28px;color:#10b981"></i>
+                    </div>
+                    <div style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:6px">Xush kelibsiz!</div>
+                    <div style="font-size:13px;color:#475569">Tizimga kirilmoqda...</div>
+                </div>
+            `;
+        }
+        setTimeout(() => {
+            document.getElementById('auth-overlay').remove();
+            document.documentElement.style.overflow = '';
+        }, 900);
+
+    } else if (result === 'expired') {
+        showAuthError('Kod vaqti tugadi! Qayta yuboring.');
+    } else {
+        showAuthError("Kod noto'g'ri! Qayta urinib ko'ring.");
+        input.value = '';
+        input.focus();
+    }
+}
+
+async function handleOtpResend() {
+    showAuthInfo('Yangi kod yuborilmoqda...');
+    const ok = await sendTelegramOtp(_pendingUsername);
+    document.getElementById('auth-info').style.display = 'none';
+    if (ok) {
+        startOtpCountdown();
+        startResendCountdown(30);
+        document.getElementById('otp-input').value = '';
+    } else {
+        showAuthError('Yuborishda xato! Qayta urinib ko\'ring.');
+    }
+}
+
+function cancelOtp() {
+    clearInterval(_otpCountdownInterval);
+    clearInterval(_resendCountdownInterval);
+    _otpCode = null;
+    _pendingUsername = null;
+    _otpExpiry = null;
+
+    const otpForm = document.getElementById('auth-otp-form');
+    const manualForm = document.getElementById('auth-manual-form');
+    if (otpForm) otpForm.style.display = 'none';
+    if (manualForm) manualForm.style.display = 'flex';
+    document.getElementById('auth-subtitle').textContent = window._authMode === 'login' ? 'Hisobingizga kiring' : 'Yangi hisob yarating';
+    document.getElementById('auth-error').style.display = 'none';
+}
+
+// ===================== SAQLANGAN HISOB =====================
+async function useSavedCreds() {
     const creds = getSavedCreds();
     if (!creds) return;
-    if (checkLogin(creds.username, creds.password)) {
+
+    if (!checkLogin(creds.username, creds.password)) {
+        clearCreds();
+        showManualLogin();
+        showAuthError("Saqlangan parol eskirgan. Qayta kiring.");
+        return;
+    }
+
+    // Ishonchli qurilmami?
+    if (isDeviceTrusted(creds.username)) {
         createSession(true, creds.username);
         document.getElementById('auth-overlay').remove();
         document.documentElement.style.overflow = '';
     } else {
-        // Saqlangan parol eski — manual formani ko'rsat
-        clearCreds();
-        showManualLogin();
-        showAuthError("Saqlangan parol eskirgan. Qayta kiring.");
+        // Yangi qurilma — OTP kerak
+        await showOtpStep(creds.username, true);
     }
 }
 
@@ -262,6 +583,53 @@ function showManualLogin() {
     if (form) form.style.display = 'flex';
 }
 
+// ===================== AUTH HANDLE =====================
+async function handleAuth() {
+    const usernameEl = document.getElementById('auth-username');
+    const passwordEl = document.getElementById('auth-password');
+    if (!usernameEl || !passwordEl) return;
+    const username = usernameEl.value.trim();
+    const password = passwordEl.value;
+    const remember = document.getElementById('auth-remember').checked;
+
+    if (!username || !password) { showAuthError('Login va parolni kiriting!'); return; }
+
+    if (window._authMode === 'register') {
+        const confirm = document.getElementById('auth-confirm').value;
+        if (password !== confirm) { showAuthError('Parollar mos kelmadi!'); return; }
+        if (password.length < 4) { showAuthError("Parol kamida 4 ta belgi bo'lishi kerak!"); return; }
+        const users = getUsers();
+        if (users[username.toLowerCase()]) { showAuthError('Bu login allaqachon band!'); return; }
+
+        // Ro'yxatdan o'tish uchun ham OTP kerak
+        saveUser(username, password);
+        const btn = document.getElementById('auth-btn');
+        if (btn) btn.disabled = true;
+        await showOtpStep(username, remember);
+        if (btn) btn.disabled = false;
+
+    } else {
+        // Login
+        if (!checkLogin(username, password)) { showAuthError("Login yoki parol noto'g'ri!"); return; }
+
+        // Ishonchli qurilma — to'g'ridan-to'g'ri kirish
+        if (isDeviceTrusted(username)) {
+            if (remember) saveCreds(username, password); else clearCreds();
+            createSession(remember, username);
+            document.getElementById('auth-overlay').remove();
+            document.documentElement.style.overflow = '';
+            return;
+        }
+
+        // Yangi qurilma — OTP
+        const btn = document.getElementById('auth-btn');
+        if (btn) btn.disabled = true;
+        await showOtpStep(username, remember);
+        if (btn) btn.disabled = false;
+    }
+}
+
+// ===================== YORDAMCHI FUNKSIYALAR =====================
 function toggleAuthPass() {
     const inp = document.getElementById('auth-password');
     const icon = document.getElementById('auth-eye-icon');
@@ -292,36 +660,18 @@ function showAuthError(msg) {
     const el = document.getElementById('auth-error');
     const txt = document.getElementById('auth-error-text');
     if (txt) txt.textContent = msg;
-    el.style.display = 'flex';
+    if (el) el.style.display = 'flex';
+    const info = document.getElementById('auth-info');
+    if (info) info.style.display = 'none';
 }
 
-function handleAuth() {
-    const usernameEl = document.getElementById('auth-username');
-    const passwordEl = document.getElementById('auth-password');
-    if (!usernameEl || !passwordEl) return;
-    const username = usernameEl.value.trim();
-    const password = passwordEl.value;
-    const remember = document.getElementById('auth-remember').checked;
-    if (!username || !password) { showAuthError('Login va parolni kiriting!'); return; }
-
-    if (window._authMode === 'register') {
-        const confirm = document.getElementById('auth-confirm').value;
-        if (password !== confirm) { showAuthError('Parollar mos kelmadi!'); return; }
-        if (password.length < 4) { showAuthError("Parol kamida 4 ta belgi bo'lishi kerak!"); return; }
-        const users = getUsers();
-        if (users[username.toLowerCase()]) { showAuthError('Bu login allaqachon band!'); return; }
-        saveUser(username, password);
-        if (remember) saveCreds(username, password); else clearCreds();
-        createSession(remember, username);
-        document.getElementById('auth-overlay').remove();
-        document.documentElement.style.overflow = '';
-    } else {
-        if (!checkLogin(username, password)) { showAuthError("Login yoki parol noto'g'ri!"); return; }
-        if (remember) saveCreds(username, password); else clearCreds();
-        createSession(remember, username);
-        document.getElementById('auth-overlay').remove();
-        document.documentElement.style.overflow = '';
-    }
+function showAuthInfo(msg) {
+    const el = document.getElementById('auth-info');
+    const txt = document.getElementById('auth-info-text');
+    if (txt) txt.textContent = msg;
+    if (el) el.style.display = 'flex';
+    const err = document.getElementById('auth-error');
+    if (err) err.style.display = 'none';
 }
 
 // ===================== TOPBAR AVATAR =====================
@@ -437,7 +787,6 @@ function renderProfilePage() {
         </style>
 
         <div class="profile-page">
-            <!-- Avatar va ism -->
             <div class="profile-section">
                 <div class="profile-section-title">Shaxsiy ma'lumotlar</div>
                 <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px">
@@ -483,7 +832,6 @@ function renderProfilePage() {
                 </button>
             </div>
 
-            <!-- Parol o'zgartirish -->
             <div class="profile-section">
                 <div class="profile-section-title">Parol o'zgartirish</div>
                 <div class="pm-error" id="pf-error"><i class="fas fa-exclamation-circle"></i><span></span></div>
@@ -510,7 +858,20 @@ function renderProfilePage() {
                 </button>
             </div>
 
-            <!-- Foydalanuvchilar -->
+            <!-- Ishonchli qurilmalar -->
+            <div class="profile-section">
+                <div class="profile-section-title"><i class="fas fa-shield-alt" style="margin-right:4px;color:var(--accent)"></i>Xavfsizlik</div>
+                <div style="font-size:13px;color:var(--text2);margin-bottom:14px">
+                    Joriy qurilma ishonchli sifatida saqlangan. Shu qurilmadan kirganda Telegram kodi so'ralmaydi.
+                </div>
+                <button class="pf-btn" onclick="removeTrustedDevice()" 
+                    style="background:rgba(245,158,11,0.1);color:#f59e0b;border:1px solid rgba(245,158,11,0.25);width:auto;padding:10px 24px;"
+                    onmouseover="this.style.background='#f59e0b';this.style.color='#fff'"
+                    onmouseout="this.style.background='rgba(245,158,11,0.1)';this.style.color='#f59e0b'">
+                    <i class="fas fa-shield-alt"></i> Qurilma ishonchini olib tashlash
+                </button>
+            </div>
+
             <div class="profile-section">
                 <div class="profile-section-title">Foydalanuvchilar</div>
                 <div id="pf-users-list"></div>
@@ -548,7 +909,6 @@ function renderProfilePage() {
                 </div>
             </div>
 
-            <!-- Chiqish -->
             <div class="profile-section" style="border-color:rgba(239,68,68,0.15)">
                 <div class="profile-section-title" style="color:#ef4444">Tizimdan chiqish</div>
                 <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Tizimdan chiqsangiz, qayta kirishda login va parol so'raladi.</p>
@@ -563,6 +923,18 @@ function renderProfilePage() {
     `;
 
     renderUsersListPage();
+}
+
+function removeTrustedDevice() {
+    if (!confirm("Bu qurilmaning ishonchliligini olib tashlaysizmi?\nKeyingi kirishda Telegram kodi talab qilinadi.")) return;
+    const currentUser = getCurrentUser();
+    const devices = getTrustedDevices();
+    const key = currentUser.toLowerCase();
+    if (devices[key]) {
+        devices[key] = devices[key].filter(id => id !== getDeviceId());
+        localStorage.setItem(TRUSTED_DEVICES_KEY, JSON.stringify(devices));
+    }
+    alert("Qurilma ishonchi olib tashlandi. Keyingi kirishda Telegram kodi talab qilinadi.");
 }
 
 function handleAvatarUpload(event) {
@@ -630,7 +1002,6 @@ function changePasswordFromPage() {
     }
 
     saveUser(currentUser, newPass);
-    // Saqlangan credlarni ham yangilash
     const creds = getSavedCreds();
     if (creds && creds.username === currentUser) saveCreds(currentUser, newPass);
 
