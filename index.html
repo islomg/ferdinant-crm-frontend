@@ -2277,31 +2277,34 @@
         if (!payment) return toast("To'lov topilmadi!", "error");
 
         const student = students.find(s => s.id === payment.student);
-        if (!student) return toast("O'quvchi topilmadi!", "error");
 
-        const newPaidAmount = student.paid_amount - payment.amount;
-        const newDebtAmount = student.original_debt - newPaidAmount;
+        // O'quvchi mavjud bo'lsa, uning qarzini yangilaymiz
+        if (student) {
+            const newPaidAmount = student.paid_amount - payment.amount;
+            const newDebtAmount = student.original_debt - newPaidAmount;
 
-        let paymentStatus = "debt";
-        if (newDebtAmount <= 0) paymentStatus = "paid";
-        else if (newPaidAmount > 0) paymentStatus = "partial";
+            let paymentStatus = "debt";
+            if (newDebtAmount <= 0) paymentStatus = "paid";
+            else if (newPaidAmount > 0) paymentStatus = "partial";
 
-        const updateData = {
-            ...student,
-            paid_amount: newPaidAmount >= 0 ? newPaidAmount : 0,
-            debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
-            payment_status: paymentStatus
-        };
+            const updateData = {
+                ...student,
+                paid_amount: newPaidAmount >= 0 ? newPaidAmount : 0,
+                debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
+                payment_status: paymentStatus
+            };
 
-        await fetch(`${API_URL}/students/${student.id}/`, {
-            method: 'PUT',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify(updateData)
-        });
+            await fetch(`${API_URL}/students/${student.id}/`, {
+                method: 'PUT',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(updateData)
+            });
+        }
 
+        // O'quvchi bo'lsa ham, bo'lmasa ham — to'lovni o'chiramiz
         const res = await fetch(`${API_URL}/payments/${payId}/`, {method: 'DELETE'});
         if (res.ok) {
-            toast("To'lov o'chirildi va qarzdorlik tiklandi");
+            toast(student ? "To'lov o'chirildi va qarzdorlik tiklandi" : "To'lov o'chirildi");
             await loadData();
         }
     }
@@ -2315,7 +2318,7 @@
             <div style="background:rgba(239,68,68,0.1); padding:8px 16px; border-radius:12px; font-size:12px">
                 <i class="fas fa-info-circle"></i> O'chirilgan o'quvchilar <strong>3 kundan keyin</strong> avtomatik butunlay o'chiriladi
             </div>
-            <button class="btn btn-danger btn-sm" onclick="if(confirm('Barchasini o\'chirish?')){ clearTrash(); }">
+            <button class="btn btn-danger btn-sm" onclick="clearTrash()">
                 <i class="fas fa-trash"></i> Hammasini o'chirish
             </button>
         </div>
@@ -2349,9 +2352,14 @@
                         <i class="far fa-clock"></i> Avtomatik o'chish: ${timeLeftText}
                     </div>
                 </div>
-                <button class="btn btn-success btn-sm" onclick="restoreStudent(${t.trashId})">
-                    <i class="fas fa-undo-alt"></i> Qaytarish
-                </button>
+                <div style="display:flex; gap:6px">
+                    <button class="btn btn-success btn-sm" onclick="restoreStudent(${t.trashId})">
+                        <i class="fas fa-undo-alt"></i> Qaytarish
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="deleteFromTrash(${t.trashId})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>`;
         }).join("") : '<div class="empty"><i class="fas fa-trash-alt"></i><p>O\'chirish savati bo\'sh</p></div>'}
     `;
@@ -2407,12 +2415,22 @@
     }
 
     async function clearTrash() {
+        if (!confirm("Barcha o'chirilganlarni butunlay o'chirish?")) return;
         const trashList = await fetch(`${API_URL}/trash/`).then(r => r.json());
         for (let t of trashList) {
             await fetch(`${API_URL}/trash/${t.id}/`, {method: 'DELETE'});
         }
         await loadData();
         toast("Barcha o'chirilganlar tozalandi");
+    }
+
+    async function deleteFromTrash(trashId) {
+        if (!confirm("Bu o'quvchini butunlay o'chirish?")) return;
+        const res = await fetch(`${API_URL}/trash/${trashId}/`, {method: 'DELETE'});
+        if (res.ok) {
+            toast("O'quvchi butunlay o'chirildi");
+            await loadData();
+        }
     }
 
     // ===================== TESTLAR BO'LIMI =====================
