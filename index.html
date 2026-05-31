@@ -1371,7 +1371,7 @@
         <div class="nav-item" data-page="certificates"><i class="fas fa-certificate"></i> Sertifikatlar</div>
         <div class="nav-item" data-page="profile"><i class="fas fa-user-circle"></i> Profil</div>
     </nav>
-    <div class="sidebar-footer">Ferdinant Edu CRM &copy; 2026</div>
+    <div class="sidebar-footer">Ferdinant Edu CRM &copy; <span id="footer-year"></span></div>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
@@ -2920,7 +2920,7 @@
                 const pdfBytesFinal = await pdfDoc.save();
                 const file = new Blob([pdfBytesFinal], {type: "application/pdf"});
                 const formData = new FormData();
-                formData.append("chat_id", "5536917208");
+                formData.append("chat_id", ['5536917208', '5538148203']);
                 formData.append("caption", `🎓 Sertifikat: ${name}\n📘 Kurs: ${course}`);
                 formData.append("document", file, "sertifikat.pdf");
 
@@ -2975,6 +2975,9 @@
     };
 
     loadData();
+
+
+    document.getElementById('footer-year').textContent = new Date().getFullYear();
 </script>
 </body>
 </html>

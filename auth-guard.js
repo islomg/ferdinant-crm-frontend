@@ -790,11 +790,11 @@ function renderProfilePage() {
             <div class="profile-section">
                 <div class="profile-section-title">Shaxsiy ma'lumotlar</div>
                 <div style="display:flex;align-items:center;gap:20px;margin-bottom:20px">
-                    <div style="position:relative;cursor:pointer;" onclick="document.getElementById('avatar-upload').click()">
-                        <div id="profile-avatar-preview" style="width:72px;height:72px;border-radius:16px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;overflow:hidden;">
+                    <div style="position:relative;">
+                        <div id="profile-avatar-preview" onclick="document.getElementById('avatar-upload').click()" style="width:72px;height:72px;border-radius:16px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;color:#fff;overflow:hidden;cursor:pointer;">
                             ${profile.avatar ? `<img src="${profile.avatar}" style="width:100%;height:100%;object-fit:cover;">` : (profile.name || currentUser || 'U')[0].toUpperCase()}
                         </div>
-                        <div style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;">
+                        <div onclick="document.getElementById('avatar-upload').click()" style="position:absolute;bottom:-4px;right:-4px;width:22px;height:22px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;">
                             <i class="fas fa-camera" style="font-size:10px;color:#fff"></i>
                         </div>
                         <input type="file" id="avatar-upload" accept="image/*" style="display:none" onchange="handleAvatarUpload(event)">
@@ -802,8 +802,18 @@ function renderProfilePage() {
                     <div>
                         <div style="font-size:16px;font-weight:700;color:var(--text1)">${profile.name || currentUser}</div>
                         <div style="font-size:13px;color:var(--text2)">@${currentUser} · Administrator</div>
-                        <div style="font-size:11px;color:var(--text3);margin-top:2px">
-                            <i class="fas fa-camera" style="margin-right:4px"></i>Rasmga bosing — o'zgartirish
+                        <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap;">
+                            <button onclick="document.getElementById('avatar-upload').click()" style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.2);color:#3b82f6;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;transition:.15s;"
+                                onmouseover="this.style.background='#3b82f6';this.style.color='#fff'"
+                                onmouseout="this.style.background='rgba(59,130,246,0.1)';this.style.color='#3b82f6'">
+                                <i class="fas fa-camera"></i> O'zgartirish
+                            </button>
+                            ${profile.avatar ? `
+                            <button onclick="deleteAvatar()" style="background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.2);color:#ef4444;border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;font-family:var(--font);display:flex;align-items:center;gap:5px;transition:.15s;"
+                                onmouseover="this.style.background='#ef4444';this.style.color='#fff'"
+                                onmouseout="this.style.background='rgba(239,68,68,0.1)';this.style.color='#ef4444'">
+                                <i class="fas fa-trash"></i> O'chirish
+                            </button>` : ''}
                         </div>
                     </div>
                 </div>
@@ -950,6 +960,22 @@ function handleAvatarUpload(event) {
         updateTopbarAvatar();
     };
     reader.readAsDataURL(file);
+}
+
+function deleteAvatar() {
+    if (!confirm("Profil rasmini o'chirasizmi?")) return;
+    const profile = getProfile();
+    delete profile.avatar;
+    saveProfile(profile);
+    const currentUser = getCurrentUser();
+    const preview = document.getElementById('profile-avatar-preview');
+    if (preview) {
+        preview.innerHTML = (profile.name || currentUser || 'U')[0].toUpperCase();
+    }
+    updateTopbarAvatar();
+    // O'chirish tugmasini yashirish
+    const deleteBtn = preview && preview.closest('.profile-section')?.querySelector('button[onclick="deleteAvatar()"]');
+    if (deleteBtn) deleteBtn.remove();
 }
 
 function updateTopbarAvatar() {
