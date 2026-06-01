@@ -1935,7 +1935,7 @@
             const g = groups.find(gr => gr.id === groupId);
             const grStudents = students.filter(s => s.group === groupId);
             document.getElementById("content").innerHTML = `
-        <div class="detail-header"><div class="detail-back" onclick="renderGroups()"><i class="fas fa-arrow-left"></i> Orqaga</div><button class="btn btn-primary btn-sm" onclick="openStudentModal(null,${groupId})"><i class="fas fa-user-plus"></i> O'quvchi qo'shish</button></div>
+        <div class="detail-header"><div class="detail-back" onclick="renderGroups()"><i class="fas fa-arrow-left"></i> Orqaga</div><button class="btn btn-primary btn-sm" onclick="openStudentModal(null,${groupId})"><i class="fas fa-user-plus"></i> <span class="add-group-label">O'quvchi qo'shish</span></button>
         <div class="chart-box"><div><div style="font-size:20px;font-weight:700">${g.name}</div><div class="group-meta">${g.time} · ${g.days} · ${g.teacher} · ${fmtFull(g.price)} so'm</div></div></div>
         <div>${grStudents.map(s => renderStudentItem(s, true)).join("")}${grStudents.length === 0 ? `<div class="empty"><i class="fas fa-user-graduate"></i><p>Bu guruhda o'quvchi yo'q</p></div>` : ""}</div>`;
         }
