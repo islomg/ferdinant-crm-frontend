@@ -468,6 +468,7 @@ async function useSavedCreds() {
     createSession(creds.username);
     document.getElementById('auth-overlay').remove();
     document.documentElement.style.overflow = '';
+    setTimeout(addTopbarButtons, 300);
 }
 
 function showManualLogin() {
@@ -509,6 +510,7 @@ async function handleAuth() {
             createSession(username);
             document.getElementById('auth-overlay').remove();
             document.documentElement.style.overflow = '';
+            setTimeout(addTopbarButtons, 300);
             return;
         }
         // Yangi qurilma — OTP
@@ -575,29 +577,37 @@ function getAvatarHtml(size = 32, fontSize = 14) {
 }
 
 function addTopbarButtons() {
+    // Eski avatar tugmasini o'chirib, yangisini qo'shamiz (qayta kirish holatida)
+    const old = document.getElementById('topbar-avatar-btn');
+    if (old) old.remove();
+
     const actions = document.querySelector('.topbar-actions');
-    if (!actions || document.getElementById('topbar-avatar-btn')) return;
+    if (!actions) return;
+
     const profile = getProfile();
     const currentUser = getCurrentUser();
+    const isMobile = window.innerWidth <= 768;
 
     const avatarWrap = document.createElement('div');
     avatarWrap.id = 'topbar-avatar-btn';
-    avatarWrap.style.cssText = 'position:relative;cursor:pointer;';
+    avatarWrap.style.cssText = 'position:relative;cursor:pointer;flex-shrink:0;';
     avatarWrap.innerHTML = `
-        <div id="topbar-avatar-inner" style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:5px 10px 5px 6px;transition:.18s;"
-            onmouseover="this.style.background='rgba(255,255,255,0.08)'"
-            onmouseout="this.style.background='rgba(255,255,255,0.04)'">
-            ${getAvatarHtml(28, 13)}
-            <span style="font-size:13px;font-weight:600;color:#f1f5f9;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${profile.name || currentUser}</span>
-            <i class="fas fa-chevron-down" style="color:#64748b;font-size:10px"></i>
+        <style>
+            #topbar-avatar-inner { display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:10px;padding:5px 8px 5px 6px;transition:.18s; }
+            #topbar-avatar-inner:hover { background:rgba(255,255,255,0.08); }
+            .topbar-username { font-size:13px;font-weight:600;color:#f1f5f9;max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+            @media(max-width:768px) { .topbar-username { display:none !important; } .topbar-chevron { display:none !important; } #topbar-avatar-inner { padding:4px; border:none; background:transparent !important; } }
+            .dd-profile-item { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:13px;color:#94a3b8;transition:.15s;border:none;background:none;width:100%;text-align:left;font-family:'Geist',-apple-system,sans-serif; }
+            .dd-profile-item:hover { background:rgba(255,255,255,0.06);color:#f1f5f9; }
+            .dd-profile-item.red:hover { background:rgba(239,68,68,0.1);color:#ef4444; }
+            .dd-profile-item i { width:16px;text-align:center;font-size:14px; }
+        </style>
+        <div id="topbar-avatar-inner">
+            ${getAvatarHtml(30, 14)}
+            <span class="topbar-username">${profile.name || currentUser}</span>
+            <i class="fas fa-chevron-down topbar-chevron" style="color:#64748b;font-size:10px"></i>
         </div>
         <div id="avatar-dropdown" style="display:none;position:absolute;right:0;top:calc(100% + 8px);background:#0d1117;border:1px solid rgba(255,255,255,0.1);border-radius:14px;padding:6px;min-width:200px;box-shadow:0 12px 40px rgba(0,0,0,0.6);z-index:9999;font-family:'Geist',-apple-system,sans-serif;">
-            <style>
-                .dd-profile-item { display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;font-size:13px;color:#94a3b8;transition:.15s;border:none;background:none;width:100%;text-align:left;font-family:'Geist',-apple-system,sans-serif; }
-                .dd-profile-item:hover { background:rgba(255,255,255,0.06);color:#f1f5f9; }
-                .dd-profile-item.red:hover { background:rgba(239,68,68,0.1);color:#ef4444; }
-                .dd-profile-item i { width:16px;text-align:center;font-size:14px; }
-            </style>
             <div style="padding:10px 12px 8px;border-bottom:1px solid rgba(255,255,255,0.06);margin-bottom:4px">
                 <div style="font-size:13px;font-weight:600;color:#f1f5f9">${profile.name || currentUser}</div>
                 <div style="font-size:11px;color:#475569;margin-top:1px">@${currentUser}</div>
