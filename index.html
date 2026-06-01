@@ -1937,6 +1937,29 @@
             toast("Guruh o'chirildi");
             await loadData();
         }
+        async function reloadStudents() {
+            const res = await fetch(`${API_URL}/students/`);
+            students = await res.json();
+            updateTopbarStat();
+        }
+
+        async function reloadPayments() {
+            const res = await fetch(`${API_URL}/payments/`);
+            payments = await res.json();
+            nextPId = payments.length > 0 ? Math.max(...payments.map(p => p.id)) + 1 : 1;
+        }
+
+        async function reloadTrash() {
+            const res = await fetch(`${API_URL}/trash/`);
+            const trashData = await res.json();
+            trash = trashData.map(t => ({
+                ...t.student_data,
+                trashId: t.id,
+                fromGroup: t.from_group,
+                deleted_at: t.created_at || t.deleted_at || new Date().toISOString()
+            }));
+            updateTopbarStat();
+        }
 
         function showGroupDetail(groupId) {
             const g = groups.find(gr => gr.id === groupId);
@@ -2082,7 +2105,8 @@
                 if (res.ok) toast("Yangi o'quvchi qo'shildi");
             }
             closeModal("student-modal");
-            await loadData();
+            await reloadStudents();
+            render();
         }
 
         async function deleteStudent(id) {
@@ -2285,7 +2309,8 @@
 
                 toast(`${fmtFull(amount)} so'm to'lov qabul qilindi`);
                 closeModal("payment-modal");
-                await loadData();
+                await Promise.all([reloadStudents(), reloadPayments()]);
+                render();
             } else toast("Xatolik yuz berdi!", "error");
         }
 
