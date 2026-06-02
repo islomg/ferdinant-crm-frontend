@@ -2226,25 +2226,29 @@
                             debtText = fmtFull(st.debt_amount) + " so'm qarz";
                             if (st.paid_amount > 0) dotColor = "var(--amber)";
                         }
-                        //         return `<div class="pay-item">
-                        //     <div class="pay-dot" style="background:${dotColor}"></div>
-                        //     <div class="pay-info">
+
+                        //         return `<div class="pay-item" style="flex-wrap:wrap;gap:8px">
+                        //     <div class="pay-dot" style="background:${dotColor};flex-shrink:0"></div>
+                        //     <div class="pay-info" style="flex:1;min-width:140px">
                         //         <div class="pay-name">${st?.name || "O'chirilgan"}</div>
                         //         <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
-                        //         <div class="pay-sub">💰 To'langan: ${fmt(p.amount)} | 📌 ${debtText}</div>
+                        //         <div class="pay-sub">💰 ${fmt(p.amount)} | 📌 ${debtText}</div>
                         //     </div>
-                        //     <div class="pay-amount">+${fmt(p.amount)}</div>
-                        //     <div class="pay-actions">
+                        //     <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0">
+                        //         <div class="pay-amount">+${fmt(p.amount)}</div>
                         //         <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
                         //         <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
                         //     </div>
                         // </div>`;
                         return `<div class="pay-item" style="flex-wrap:wrap;gap:8px">
-                    <div class="pay-dot" style="background:${dotColor};flex-shrink:0"></div>
+                    <div class="student-avatar" style="background:${hashColor(st?.name || 'X')}22;color:${hashColor(st?.name || 'X')};flex-shrink:0">${initials(st?.name || '?')}</div>
                     <div class="pay-info" style="flex:1;min-width:140px">
                         <div class="pay-name">${st?.name || "O'chirilgan"}</div>
                         <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
-                        <div class="pay-sub">💰 ${fmt(p.amount)} | 📌 ${debtText}</div>
+                        <div class="pay-sub">
+                            <span style="color:var(--green)">💰 To'langan: ${fmtFull(p.amount)} so'm</span> | 
+                            <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
+                        </div>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0">
                         <div class="pay-amount">+${fmt(p.amount)}</div>
