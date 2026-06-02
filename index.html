@@ -2236,16 +2236,15 @@
                         //             <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
                         //         </div>
                         //     </div>
-                        //     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;margin-left:auto;flex-shrink:0">
-                        //         <div style="display:flex;gap:6px">
-                        //             <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
-                        //             <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
-                        //         </div>
+                        //     <div style="display:flex;gap:6px;flex-shrink:0">
+                        //         <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
+                        //         <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
+                        //     </div>
+                        //     <div style="width:100%;display:flex;justify-content:flex-end">
                         //         <div class="pay-amount">+${fmt(p.amount)}</div>
                         //     </div>
                         // </div>`;
-
-                        return `<div class="pay-item" style="flex-wrap:wrap;gap:8px;align-items:flex-start">
+                        return `<div class="pay-item" style="flex-wrap:wrap;gap:8px;align-items:center">
                             <div class="pay-info" style="flex:1;min-width:140px">
                                 <div class="pay-name">${st?.name || "O'chirilgan"}</div>
                                 <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
@@ -2253,12 +2252,10 @@
                                     <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
                                 </div>
                             </div>
-                            <div style="display:flex;gap:6px;flex-shrink:0">
+                            <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;margin-left:auto">
+                                <div class="pay-amount">+${fmt(p.amount)}</div>
                                 <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
                                 <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
-                            </div>
-                            <div style="width:100%;display:flex;justify-content:flex-end">
-                                <div class="pay-amount">+${fmt(p.amount)}</div>
                             </div>
                         </div>`;
 
