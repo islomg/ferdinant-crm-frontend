@@ -2225,25 +2225,106 @@
             _refreshPaymentList();
         }
 
+        // function _refreshPaymentList() {
+        //     const filtered = students.filter(s => s.name.toLowerCase().includes(paymentSearch.toLowerCase()));
+
+        //     const listEl = document.getElementById("pay-students-list");
+        //     if (listEl) {
+        //         const totalStudentPages = Math.ceil(filtered.length / PAY_PER_PAGE) || 1;
+        //         if (currentPaymentPage > totalStudentPages) currentPaymentPage = 1;
+        //         const slice = filtered.slice((currentPaymentPage - 1) * PAY_PER_PAGE, currentPaymentPage * PAY_PER_PAGE);
+
+        //         listEl.innerHTML = slice.map(s =>
+        //             `<div class="student-item">
+        //         <div class="student-avatar" style="background:${hashColor(s.name)}22;color:${hashColor(s.name)}">${initials(s.name)}</div>
+        //         <div class="student-info">
+        //             <div class="student-name">${s.name}</div>
+        //             <div class="student-sub">💰 To'langan: ${fmtFull(s.paid_amount)} | 📌 Qarz: ${fmtFull(s.debt_amount)}</div>
+        //         </div>
+        //         <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})">To'lov</button>
+        //     </div>`
+        //         ).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
+        //     }
+
+        //     const titleEl = document.getElementById("pay-history-title");
+        //     if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payments.length})`;
+
+        //     const histEl = document.getElementById("pay-history-list");
+        //     if (histEl) {
+        //         histEl.innerHTML = [...payments]
+        //             .sort((a, b) => b.id - a.id)
+        //             .map(p => {
+        //                 const st = students.find(s => s.id === p.student);
+        //                 let dotColor = "var(--green)";
+        //                 let debtText = "To'liq to'langan";
+        //                 if (st && st.debt_amount > 0) {
+        //                     dotColor = "var(--red)";
+        //                     debtText = fmtFull(st.debt_amount) + " so'm qarz";
+        //                     if (st.paid_amount > 0) dotColor = "var(--amber)";
+        //                 }
+
+
+        //                 return `<div class="pay-item" style="flex-wrap:wrap;gap:8px;align-items:flex-start; height: 80px;">
+        //                     <div class="pay-info" style="flex:1;min-width:140px">
+        //                         <div class="pay-name">${st?.name || "O'chirilgan"}</div>
+        //                         <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
+        //                         <div class="pay-sub">
+        //                             <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
+        //                         </div>
+        //                     </div>
+        //                     <div style="display:flex;gap:6px;flex-shrink:0">
+        //                         <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
+        //                         <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
+        //                     </div>
+        //                     <div style="width:100%;display:flex;justify-content:flex-end">
+        //                         <div class="pay-amount" style="margin-top: -30px;">+${fmt(p.amount)}</div>
+        //                     </div>
+        //                 </div>`;
+
+
+        //             }).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
+
+        //         const pagStudEl = document.getElementById("pay-students-pagination");
+        //         if (pagStudEl) {
+        //             let pages = "";
+        //             for (let i = 1; i <= totalStudentPages; i++) {
+        //                 pages += `<button class="page-btn ${i === currentPaymentPage ? "active" : ""}" onclick="currentPaymentPage=${i};_refreshPaymentList()">${i}</button>`;
+        //             }
+        //             pagStudEl.innerHTML = pages;
+        //         }
+        //     }
+        // }
         function _refreshPaymentList() {
             const filtered = students.filter(s => s.name.toLowerCase().includes(paymentSearch.toLowerCase()));
+            const totalStudentPages = Math.ceil(filtered.length / PAY_PER_PAGE) || 1;
+            if (currentPaymentPage > totalStudentPages) currentPaymentPage = 1;
+            const slice = filtered.slice((currentPaymentPage - 1) * PAY_PER_PAGE, currentPaymentPage * PAY_PER_PAGE);
 
             const listEl = document.getElementById("pay-students-list");
             if (listEl) {
-                const totalStudentPages = Math.ceil(filtered.length / PAY_PER_PAGE) || 1;
-                if (currentPaymentPage > totalStudentPages) currentPaymentPage = 1;
-                const slice = filtered.slice((currentPaymentPage - 1) * PAY_PER_PAGE, currentPaymentPage * PAY_PER_PAGE);
-
                 listEl.innerHTML = slice.map(s =>
-                    `<div class="student-item">
-                <div class="student-avatar" style="background:${hashColor(s.name)}22;color:${hashColor(s.name)}">${initials(s.name)}</div>
-                <div class="student-info">
+                    `<div class="student-item" style="flex-wrap:wrap;gap:8px">
+                <div class="student-info" style="flex:1;min-width:140px">
                     <div class="student-name">${s.name}</div>
-                    <div class="student-sub">💰 To'langan: ${fmtFull(s.paid_amount)} | 📌 Qarz: ${fmtFull(s.debt_amount)}</div>
+                    <div class="student-sub" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+                        <span style="background:rgba(16,185,129,0.12);color:var(--green);padding:2px 10px;border-radius:20px;font-size:12px">💰 To'langan: ${fmtFull(s.paid_amount)} so'm</span>
+                        <span style="background:${s.debt_amount > 0 ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)'};color:${s.debt_amount > 0 ? 'var(--red)' : 'var(--green)'};padding:2px 10px;border-radius:20px;font-size:12px">📌 Qarz: ${fmtFull(s.debt_amount)} so'm</span>
+                    </div>
                 </div>
-                <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})">To'lov</button>
+                <div style="display:flex;align-items:center;gap:8px;margin-left:auto;flex-shrink:0">
+                    <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})"><i class="fas fa-credit-card"></i> To'lov</button>
+                </div>
             </div>`
                 ).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
+            }
+
+            const pagStudEl = document.getElementById("pay-students-pagination");
+            if (pagStudEl) {
+                let pages = "";
+                for (let i = 1; i <= totalStudentPages; i++) {
+                    pages += `<button class="page-btn ${i === currentPaymentPage ? "active" : ""}" onclick="currentPaymentPage=${i};_refreshPaymentList()">${i}</button>`;
+                }
+                pagStudEl.innerHTML = pages;
             }
 
             const titleEl = document.getElementById("pay-history-title");
@@ -2255,43 +2336,27 @@
                     .sort((a, b) => b.id - a.id)
                     .map(p => {
                         const st = students.find(s => s.id === p.student);
-                        let dotColor = "var(--green)";
                         let debtText = "To'liq to'langan";
                         if (st && st.debt_amount > 0) {
-                            dotColor = "var(--red)";
                             debtText = fmtFull(st.debt_amount) + " so'm qarz";
-                            if (st.paid_amount > 0) dotColor = "var(--amber)";
                         }
-
-
-                        return `<div class="pay-item" style="flex-wrap:wrap;gap:8px;align-items:flex-start; height: 80px;">
-                            <div class="pay-info" style="flex:1;min-width:140px">
-                                <div class="pay-name">${st?.name || "O'chirilgan"}</div>
-                                <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
-                                <div class="pay-sub">
-                                    <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
-                                </div>
-                            </div>
-                            <div style="display:flex;gap:6px;flex-shrink:0">
-                                <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
-                                <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
-                            </div>
-                            <div style="width:100%;display:flex;justify-content:flex-end">
-                                <div class="pay-amount" style="margin-top: -30px;">+${fmt(p.amount)}</div>
-                            </div>
-                        </div>`;
-
-
-                    }).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
-
-                const pagStudEl = document.getElementById("pay-students-pagination");
-                if (pagStudEl) {
-                    let pages = "";
-                    for (let i = 1; i <= totalStudentPages; i++) {
-                        pages += `<button class="page-btn ${i === currentPaymentPage ? "active" : ""}" onclick="currentPaymentPage=${i};_refreshPaymentList()">${i}</button>`;
-                    }
-                    pagStudEl.innerHTML = pages;
-                }
+                        return `<div class="pay-item" style="flex-wrap:wrap;gap:4px;align-items:flex-start;padding-bottom:10px">
+                    <div class="pay-info" style="flex:1;min-width:140px">
+                        <div class="pay-name">${st?.name || "O'chirilgan"}</div>
+                        <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
+                        <div class="pay-sub">
+                            <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
+                        </div>
+                    </div>
+                    <div style="display:flex;gap:6px;flex-shrink:0">
+                        <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
+                        <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
+                    </div>
+                    <div style="width:100%;display:flex;justify-content:flex-end;margin-top:-8px">
+                        <div class="pay-amount">+${fmt(p.amount)}</div>
+                    </div>
+                </div>`;
+                    }).join("") || '<div class="empty"><i class="fas fa-receipt"></i><p>Hali to\'lov yo\'q</p></div>';
             }
         }
 
@@ -2382,18 +2447,6 @@
             } else toast("Xatolik yuz berdi!", "error");
         }
 
-        // function openEditPayModal(payId) {
-        //     editPaymentId = payId;
-        //     const p = payments.find(py => py.id === payId);
-        //     if (p) {
-        //         setMoneyVal("m-epamount", p.amount);
-        //         const mSel = document.getElementById("m-epmonth");
-        //         mSel.innerHTML = MONTHS_UZ.map(m => `<option value="${m}" ${m === p.month ? "selected" : ""}>${m}</option>`).join("");
-        //         document.getElementById("m-epyear").value = p.year;
-        //         openModal("edit-payment-modal");
-        //     }
-        // }
-
         function openEditPayModal(payId) {
             editPaymentId = payId;
             const p = payments.find(py => py.id === payId);
@@ -2410,52 +2463,6 @@
                 initMoneyInputs();
             }, 50);
         }
-
-        // async function saveEditPayment() {
-        //     const newAmount = getMoneyVal("m-epamount");
-        //     const newMonth = document.getElementById("m-epmonth").value;
-        //     const newYear = parseInt(document.getElementById("m-epyear").value) || curYear();
-        //     if (!newAmount || newAmount <= 0) return toast("To'g'ri summa kiriting!", "error");
-
-        //     const oldPayment = payments.find(p => p.id === editPaymentId);
-        //     if (!oldPayment) return toast("To'lov topilmadi!", "error");
-
-        //     const student = students.find(s => s.id === oldPayment.student);
-        //     if (!student) return toast("O'quvchi topilmadi!", "error");
-
-        //     const amountDiff = newAmount - oldPayment.amount;
-        //     const newPaidAmount = student.paid_amount + amountDiff;
-        //     const newDebtAmount = student.original_debt - newPaidAmount;
-
-        //     let paymentStatus = "partial";
-        //     if (newDebtAmount <= 0) paymentStatus = "paid";
-        //     else if (newPaidAmount === 0) paymentStatus = "debt";
-
-        //     const updateData = {
-        //         ...student,
-        //         paid_amount: newPaidAmount,
-        //         debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
-        //         payment_status: paymentStatus
-        //     };
-
-        //     await fetch(`${API_URL}/students/${student.id}/`, {
-        //         method: 'PUT',
-        //         headers: { 'Content-Type': 'application/json' },
-        //         body: JSON.stringify(updateData)
-        //     });
-
-        //     const res = await fetch(`${API_URL}/payments/${editPaymentId}/`, {
-        //         method: 'PUT',
-        //         headers: { 'Content-Type': 'application/json' },
-        //         body: JSON.stringify({ amount: newAmount, month: newMonth, year: newYear })
-        //     });
-
-        //     if (res.ok) {
-        //         toast("To'lov tahrirlandi");
-        //         closeModal("edit-payment-modal");
-        //         await loadData();
-        //     }
-        // }
 
         async function saveEditPayment() {
             const newAmount = getMoneyVal("m-epamount");
