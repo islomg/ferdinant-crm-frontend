@@ -2340,7 +2340,7 @@
                         if (st && st.debt_amount > 0) {
                             debtText = fmtFull(st.debt_amount) + " so'm qarz";
                         }
-                        return `<div class="pay-item" style="flex-wrap:wrap;gap:4px;align-items:flex-start;padding-bottom:10px">
+                        return `<div class="pay-item" style="flex-wrap:wrap;gap:4px;align-items:flex-start;padding-bottom:10px; height: 80px;">
                     <div class="pay-info" style="flex:1;min-width:140px">
                         <div class="pay-name">${st?.name || "O'chirilgan"}</div>
                         <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
@@ -2352,7 +2352,7 @@
                         <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
                         <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
                     </div>
-                    <div style="width:100%;display:flex;justify-content:flex-end;margin-top:-8px">
+                    <div style="width:100%;display:flex;justify-content:flex-end;margin-top:-30px">
                         <div class="pay-amount">+${fmt(p.amount)}</div>
                     </div>
                 </div>`;
