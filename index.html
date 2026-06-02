@@ -2230,7 +2230,11 @@
 
             const listEl = document.getElementById("pay-students-list");
             if (listEl) {
-                listEl.innerHTML = filtered.map(s =>
+                const totalStudentPages = Math.ceil(filtered.length / PAY_PER_PAGE) || 1;
+                if (currentPaymentPage > totalStudentPages) currentPaymentPage = 1;
+                const slice = filtered.slice((currentPaymentPage - 1) * PAY_PER_PAGE, currentPaymentPage * PAY_PER_PAGE);
+
+                listEl.innerHTML = slice.map(s =>
                     `<div class="student-item">
                 <div class="student-avatar" style="background:${hashColor(s.name)}22;color:${hashColor(s.name)}">${initials(s.name)}</div>
                 <div class="student-info">
@@ -2280,8 +2284,6 @@
 
                     }).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
 
-                const totalStudentPages = Math.ceil(filtered.length / PAY_PER_PAGE) || 1;
-                if (currentPaymentPage > totalStudentPages) currentPaymentPage = 1;
                 const pagStudEl = document.getElementById("pay-students-pagination");
                 if (pagStudEl) {
                     let pages = "";
