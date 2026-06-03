@@ -2165,33 +2165,7 @@
         }
 
         // ===================== PAYMENTS =====================
-        // function renderPayments() {
-        //     const content = document.getElementById("content");
 
-        //     if (!document.getElementById("pay-students-list")) {
-        //         content.innerHTML = `
-        //     <div class="filter-bar">
-        //         <input id="p-search" placeholder="🔍 O'quvchi izlash..." style="flex:1">
-        //     </div>
-        //     <div id="pay-students-list"></div>
-        //     <div class="chart-box">
-        //         <div id="pay-history-title" class="section-title">To'lovlar tarixi</div>
-        //         <div id="pay-history-list"></div>
-        //     </div>`;
-
-        //         document.getElementById("p-search").addEventListener("input", e => {
-        //             paymentSearch = e.target.value;
-        //             _refreshPaymentList();
-        //         });
-        //     }
-
-        //     const searchEl = document.getElementById("p-search");
-        //     if (searchEl && searchEl.value !== paymentSearch) {
-        //         searchEl.value = paymentSearch;
-        //     }
-
-        //     _refreshPaymentList();
-        // }
         let currentPaymentPage = 1;
         const PAY_PER_PAGE = 10;
 
@@ -2225,75 +2199,6 @@
             _refreshPaymentList();
         }
 
-        // function _refreshPaymentList() {
-        //     const filtered = students.filter(s => s.name.toLowerCase().includes(paymentSearch.toLowerCase()));
-
-        //     const listEl = document.getElementById("pay-students-list");
-        //     if (listEl) {
-        //         const totalStudentPages = Math.ceil(filtered.length / PAY_PER_PAGE) || 1;
-        //         if (currentPaymentPage > totalStudentPages) currentPaymentPage = 1;
-        //         const slice = filtered.slice((currentPaymentPage - 1) * PAY_PER_PAGE, currentPaymentPage * PAY_PER_PAGE);
-
-        //         listEl.innerHTML = slice.map(s =>
-        //             `<div class="student-item">
-        //         <div class="student-avatar" style="background:${hashColor(s.name)}22;color:${hashColor(s.name)}">${initials(s.name)}</div>
-        //         <div class="student-info">
-        //             <div class="student-name">${s.name}</div>
-        //             <div class="student-sub">💰 To'langan: ${fmtFull(s.paid_amount)} | 📌 Qarz: ${fmtFull(s.debt_amount)}</div>
-        //         </div>
-        //         <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})">To'lov</button>
-        //     </div>`
-        //         ).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
-        //     }
-
-        //     const titleEl = document.getElementById("pay-history-title");
-        //     if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payments.length})`;
-
-        //     const histEl = document.getElementById("pay-history-list");
-        //     if (histEl) {
-        //         histEl.innerHTML = [...payments]
-        //             .sort((a, b) => b.id - a.id)
-        //             .map(p => {
-        //                 const st = students.find(s => s.id === p.student);
-        //                 let dotColor = "var(--green)";
-        //                 let debtText = "To'liq to'langan";
-        //                 if (st && st.debt_amount > 0) {
-        //                     dotColor = "var(--red)";
-        //                     debtText = fmtFull(st.debt_amount) + " so'm qarz";
-        //                     if (st.paid_amount > 0) dotColor = "var(--amber)";
-        //                 }
-
-
-        //                 return `<div class="pay-item" style="flex-wrap:wrap;gap:8px;align-items:flex-start; height: 80px;">
-        //                     <div class="pay-info" style="flex:1;min-width:140px">
-        //                         <div class="pay-name">${st?.name || "O'chirilgan"}</div>
-        //                         <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
-        //                         <div class="pay-sub">
-        //                             <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
-        //                         </div>
-        //                     </div>
-        //                     <div style="display:flex;gap:6px;flex-shrink:0">
-        //                         <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})"><i class="fas fa-edit"></i></button>
-        //                         <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})"><i class="fas fa-trash"></i></button>
-        //                     </div>
-        //                     <div style="width:100%;display:flex;justify-content:flex-end">
-        //                         <div class="pay-amount" style="margin-top: -30px;">+${fmt(p.amount)}</div>
-        //                     </div>
-        //                 </div>`;
-
-
-        //             }).join("") || '<div class="empty"><i class="fas fa-user-graduate"></i><p>O\'quvchi topilmadi</p></div>';
-
-        //         const pagStudEl = document.getElementById("pay-students-pagination");
-        //         if (pagStudEl) {
-        //             let pages = "";
-        //             for (let i = 1; i <= totalStudentPages; i++) {
-        //                 pages += `<button class="page-btn ${i === currentPaymentPage ? "active" : ""}" onclick="currentPaymentPage=${i};_refreshPaymentList()">${i}</button>`;
-        //             }
-        //             pagStudEl.innerHTML = pages;
-        //         }
-        //     }
-        // }
         function _refreshPaymentList() {
             const filtered = students.filter(s => s.name.toLowerCase().includes(paymentSearch.toLowerCase()));
             const totalStudentPages = Math.ceil(filtered.length / PAY_PER_PAGE) || 1;
@@ -3021,45 +2926,73 @@
 
         function renderTests() {
             document.getElementById("content").innerHTML = `
-        <div style="display:flex;justify-content:center">
-            <div class="test-container" style="max-width:700px">
-                <div id="testStartPanel" style="display:flex;justify-content:center;align-items:center;min-height:50vh">
-                    <button class="btn btn-primary" style="padding:18px 48px;font-size:1.2rem" onclick="testShowInfo()"><i class="fas fa-microchip"></i> Testni ishga tushirish</button>
-                </div>
-                <div id="testInfoPanel" style="display:none">
-                    <div class="test-card-panel">
-                        <div class="test-card-header"><h2 style="color:var(--text1)"><i class="fas fa-shield-alt"></i> Test reglamenti</h2></div>
-                        <div style="padding:28px 32px">
-                            <div class="info-item"><i class="fas fa-hourglass-half"></i> Har bir savolga <span>30 soniya</span> vaqt</div>
-                            <div class="info-item"><i class="fas fa-lock"></i> Javob tanlangandan keyin <span>o'zgartirish bloklanadi</span></div>
-                            <div class="info-item"><i class="fas fa-stopwatch"></i> Vaqt tugasa <span>to'g'ri javob ko'rsatiladi</span></div>
-                            <div class="info-item"><i class="fas fa-chart-line"></i> Har bir to'g'ri javob <span>+1 ball</span></div>
+    <div style="display:flex;justify-content:center">
+        <div class="test-container" style="max-width:700px">
+            <div id="testStartPanel" style="display:flex;justify-content:center;align-items:center;min-height:50vh">
+                <button class="btn btn-primary" style="padding:18px 48px;font-size:1.2rem" onclick="testShowInfo()"><i class="fas fa-microchip"></i> Testni ishga tushirish</button>
+            </div>
+            <div id="testInfoPanel" style="display:none">
+                <div class="test-card-panel">
+                    <div class="test-card-header">
+                        <h2 style="color:var(--text1);display:flex;align-items:center;gap:10px">
+                            <i class="fas fa-shield-alt" style="color:#38BDF8"></i> Test reglamenti
+                        </h2>
+                    </div>
+                    <div style="padding:28px 32px;display:flex;flex-direction:column;gap:14px">
+                        <div class="info-item">
+                            <i class="fas fa-hourglass-half"></i>
+                            Har bir savolga <span>30 soniya</span> vaqt
                         </div>
-                        <div class="button-group" style="padding:18px 32px 28px;border-top:1px solid rgba(71,85,105,0.3)">
-                            <button class="btn btn-ghost" onclick="testHideInfo()">Bekor qilish</button>
-                            <button class="btn btn-primary" onclick="testResetAndStart()">Boshlash</button>
+                        <div class="info-item">
+                            <i class="fas fa-lock"></i>
+                            Javob tanlangandan keyin <span>o'zgartirish bloklanadi</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-stopwatch"></i>
+                            Vaqt tugasa <span>to'g'ri javob ko'rsatiladi</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-ban"></i>
+                            Test vaqtida <span>chiqish yoki devtool'lar taqiqlangan</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-chart-line"></i>
+                            Har bir to'g'ri javob <span>+1 ball</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-trophy"></i>
+                            <span>17+ to'g'ri</span> — yuqori natija
                         </div>
                     </div>
+                    <div class="button-group" style="padding:18px 32px 28px;border-top:1px solid rgba(71,85,105,0.3)">
+                        <button class="btn btn-ghost" style="padding:10px 28px;border-radius:40px;font-size:14px" onclick="testHideInfo()">
+                            <i class="fas fa-times"></i> Bekor qilish
+                        </button>
+                        <button class="btn btn-primary" style="padding:10px 28px;border-radius:40px;font-size:14px" onclick="testResetAndStart()">
+                            <i class="fas fa-play"></i> Boshlash
+                        </button>
+                    </div>
                 </div>
-                <div id="testQuizPanel" style="display:none">
-                    <div class="test-card-panel">
-                        <div class="test-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
-                            <div class="quiz-title"><i class="fas fa-desktop"></i> IT Savodxonlik</div>
-                            <div class="test-timer-modern"><i class="far fa-clock"></i> Qolgan vaqt <span id="testTimerSeconds" style="background:#0F172A;padding:4px 12px;border-radius:40px;font-weight:700;color:#38BDF8;min-width:48px;text-align:center">30</span></div>
-                        </div>
-                        <div class="test-progress-bar"><div id="testProgressFill" class="test-progress-fill"></div></div>
-                        <div style="padding:28px 32px">
-                            <div id="testQuestionText" style="font-size:1.35rem;font-weight:600;color:#F8FAFC;margin-bottom:28px;border-left:4px solid #3B82F6;padding-left:20px"></div>
-                            <div id="testOptionsContainer" style="display:flex;flex-direction:column;gap:14px"></div>
-                        </div>
-                        <div style="padding:18px 32px 24px;border-top:1px solid #1E293B;display:flex;justify-content:space-between;align-items:center">
-                            <div id="testQuestionCounter" style="color:#94A3B8;font-weight:500"></div>
-                            <button id="testNextBtn" class="next-btn" onclick="testNextQuestionHandler()">Keyingi savol <i class="fas fa-arrow-right"></i></button>
-                        </div>
+            </div>
+            <div id="testQuizPanel" style="display:none">
+                <div class="test-card-panel">
+                    <div class="test-card-header" style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap">
+                        <div class="quiz-title"><i class="fas fa-desktop"></i> IT Savodxonlik</div>
+                        <div class="test-timer-modern"><i class="far fa-clock"></i> Qolgan vaqt <span id="testTimerSeconds" style="background:#0F172A;padding:4px 12px;border-radius:40px;font-weight:700;color:#38BDF8;min-width:48px;text-align:center">30</span></div>
+                    </div>
+                    <div class="test-progress-bar"><div id="testProgressFill" class="test-progress-fill"></div></div>
+                    <div style="padding:28px 32px">
+                        <div id="testQuestionText" style="font-size:1.35rem;font-weight:600;color:#F8FAFC;margin-bottom:28px;border-left:4px solid #3B82F6;padding-left:20px"></div>
+                        <div id="testOptionsContainer" style="display:flex;flex-direction:column;gap:14px"></div>
+                    </div>
+                    <div style="padding:18px 32px 24px;border-top:1px solid #1E293B;display:flex;justify-content:space-between;align-items:center">
+                        <div id="testQuestionCounter" style="color:#94A3B8;font-weight:500"></div>
+                        <button id="testNextBtn" class="next-btn" onclick="testNextQuestionHandler()">Keyingi savol <i class="fas fa-arrow-right"></i></button>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
     `;
         }
 
