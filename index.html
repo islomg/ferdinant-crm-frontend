@@ -3136,23 +3136,23 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-pulse me-1"></i> Yuborilmoqda...';
             btn.disabled = true;
 
-            sendTelegramResult(userName, pendingScore, pendingTotal).then(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                if (nameModalInstance) nameModalInstance.hide();
-                toast("Natijangiz muvaffaqiyatli yuborildi!", "success");
-                setTimeout(() => {
-                    currentPage = "dashboard";
-                    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-                    document.querySelector(".nav-item[data-page='dashboard']").classList.add("active");
-                    document.getElementById("topbar-title").textContent = "Dashboard";
-                    render();
-                }, 500);
-            }).catch(() => {
-                btn.innerHTML = originalText;
-                btn.disabled = false;
-                toast("Xatolik yuz berdi, qayta urinib ko'ring", "error");
-            });
+            async function sendTelegramResult(name, score, total) {
+                const message = `📢 Kompyuter savodxonligi testi\n👤 Ism: ${name}\n✅ To'g'ri javoblar: ${score}/${total}\n📅 Sana: ${new Date().toLocaleString()}`;
+
+                const promises = CHAT_IDS.map(chatId =>
+                    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: message })
+                    })
+                );
+
+                try {
+                    await Promise.all(promises);
+                } catch (e) {
+                    console.warn("Telegram yuborishda xatolik", e);
+                }
+            }
         };
 
         loadData();
