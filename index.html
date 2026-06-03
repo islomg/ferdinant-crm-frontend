@@ -2803,6 +2803,7 @@
                 }
             }
         }
+        let testWrongCount = 0;
 
         function testHandleOptionClick(optionDiv, selectedText) {
             if (!testQuizActive || !testCanAnswer) return;
@@ -2816,12 +2817,21 @@
                 tickDiv.innerHTML = '<i class="fas fa-check"></i>';
                 optionDiv.appendChild(tickDiv);
             } else {
+                testWrongCount++;
                 optionDiv.classList.add("incorrect");
                 const crossDiv = document.createElement("div");
                 crossDiv.className = "icon-badge cross-icon";
                 crossDiv.innerHTML = '<i class="fas fa-times"></i>';
                 optionDiv.appendChild(crossDiv);
                 testHighlightCorrectOnly(correctAns);
+
+                // 3 xato bo'lsa testni to'xtat
+                if (testWrongCount >= 3) {
+                    document.querySelectorAll(".test-option-item").forEach(opt => opt.classList.add("disabled"));
+                    testCanAnswer = false;
+                    setTimeout(() => testShowFailPanel(), 600);
+                    return;
+                }
             }
             document.querySelectorAll(".test-option-item").forEach(opt => opt.classList.add("disabled"));
             testCanAnswer = false;
@@ -2923,13 +2933,24 @@
 
         function testResetAndStart() {
             testClearTimers();
+            testWrongCount = 0;
             testInitQuiz();
             const startPanel = document.getElementById("testStartPanel");
             const infoPanel = document.getElementById("testInfoPanel");
             const quizPanel = document.getElementById("testQuizPanel");
+            const failPanel = document.getElementById("testFailPanel");
             if (startPanel) startPanel.style.display = "none";
             if (infoPanel) infoPanel.style.display = "none";
             if (quizPanel) quizPanel.style.display = "block";
+            if (failPanel) failPanel.style.display = "none";
+        }
+        function testShowFailPanel() {
+            testQuizActive = false;
+            testClearTimers();
+            const quizPanel = document.getElementById("testQuizPanel");
+            if (quizPanel) quizPanel.style.display = "none";
+            const failPanel = document.getElementById("testFailPanel");
+            if (failPanel) failPanel.style.display = "flex";
         }
 
         function renderTests() {
@@ -2996,6 +3017,30 @@
                     <div style="padding:18px 32px 24px;border-top:1px solid #1E293B;display:flex;justify-content:space-between;align-items:center">
                         <div id="testQuestionCounter" style="color:#94A3B8;font-weight:500"></div>
                         <button id="testNextBtn" class="next-btn" onclick="testNextQuestionHandler()">Keyingi savol <i class="fas fa-arrow-right"></i></button>
+                    </div>
+                </div>
+            </div>
+            <div id="testFailPanel" style="display:none;flex-direction:column;align-items:center;justify-content:center;min-height:60vh">
+                <div class="test-card-panel" style="width:100%;text-align:center">
+                    <div style="padding:40px 32px 20px">
+                        <div style="font-size:72px;margin-bottom:16px">😔</div>
+                        <div style="font-size:1.6rem;font-weight:800;color:#ef4444;margin-bottom:12px">
+                            Testdan yiqildingiz!
+                        </div>
+                        <div style="font-size:1rem;color:#94A3B8;margin-bottom:8px">
+                            Siz <strong style="color:#f87171">3 ta xato</strong> qildingiz.
+                        </div>
+                        <div style="font-size:0.9rem;color:#64748B;margin-bottom:32px">
+                            Bilimlaringizni mustahkamlab, qayta urinib ko'ring 💪
+                        </div>
+                        <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:8px">
+                            <button class="btn btn-ghost" style="padding:12px 32px;border-radius:40px;font-size:15px" onclick="testHideInfo();document.getElementById('testStartPanel').style.display='flex';document.getElementById('testFailPanel').style.display='none'">
+                                <i class="fas fa-times"></i> Bekor qilish
+                            </button>
+                            <button class="btn btn-primary" style="padding:12px 32px;border-radius:40px;font-size:15px" onclick="testShowInfo();document.getElementById('testFailPanel').style.display='none'">
+                                <i class="fas fa-redo"></i> Qayta boshlash
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -3133,6 +3178,7 @@
         function renderPlaceholder() {
             document.getElementById("content").innerHTML = `<div class="empty"><i class="fas fa-tools fa-3x" style="color:var(--accent2)"></i><h3>Tez kunda</h3><p>Bu bo'lim ishlab chiqilmoqda</p></div>`;
         }
+
 
         document.getElementById("confirmNameBtn").onclick = async () => {
             const userNameInput = document.getElementById("userNameInput");
