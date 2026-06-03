@@ -2871,16 +2871,24 @@
         const CHAT_IDS = ["5536917208", "5538148203"];
 
         async function sendTelegramResult(name, score, total) {
-            const message = `📢 Kompyuter savodxonligi testi\n👤 Ism: ${name}\n✅ To'g'ri javoblar: ${score}/${total}\n📅 Sana: ${new Date().toLocaleString()}`;
-            try {
-                await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ chat_id: CHAT_ID, text: message })
-                });
-            } catch (e) {
-                console.warn("Telegram yuborishda xatolik", e);
+            const message = `📢 Kompyuter savodxonligi testi\n👤 Ism: ${name}\n✅ To\'g\'ri javoblar: ${score}/${total}\n📅 Sana: ${new Date().toLocaleString()}`;
+
+            const results = [];
+            for (const chatId of CHAT_IDS) {
+                try {
+                    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ chat_id: chatId, text: message })
+                    });
+                    const data = await res.json();
+                    console.log("Telegram response:", chatId, data);
+                    results.push(data);
+                } catch (e) {
+                    console.error("Telegram xatolik:", chatId, e);
+                }
             }
+            return results;
         }
 
         let pendingScore = 0, pendingTotal = 0;
@@ -3126,32 +3134,47 @@
             document.getElementById("content").innerHTML = `<div class="empty"><i class="fas fa-tools fa-3x" style="color:var(--accent2)"></i><h3>Tez kunda</h3><p>Bu bo'lim ishlab chiqilmoqda</p></div>`;
         }
 
-        document.getElementById("confirmNameBtn").onclick = () => {
+        document.getElementById("confirmNameBtn").onclick = async () => {
             const userNameInput = document.getElementById("userNameInput");
             let userName = userNameInput.value.trim();
             if (userName === "") userName = "Ismsiz foydalanuvchi";
 
             const btn = document.getElementById("confirmNameBtn");
-            const originalText = btn.innerHTML;
             btn.innerHTML = '<i class="fas fa-spinner fa-pulse me-1"></i> Yuborilmoqda...';
             btn.disabled = true;
 
-            async function sendTelegramResult(name, score, total) {
-                const message = `📢 Kompyuter savodxonligi testi\n👤 Ism: ${name}\n✅ To'g'ri javoblar: ${score}/${total}\n📅 Sana: ${new Date().toLocaleString()}`;
+            try {
+                const results = await sendTelegramResult(userName, pendingScore, pendingTotal);
+                console.log("Barcha natijalar:", results);
 
-                const promises = CHAT_IDS.map(chatId =>
-                    fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: message })
-                    })
-                );
+                // Muvaffaqiyatli yuborilganmi tekshiramiz
+                const success = results.some(r => r.ok === true);
 
-                try {
-                    await Promise.all(promises);
-                } catch (e) {
-                    console.warn("Telegram yuborishda xatolik", e);
+                if (success) {
+                    btn.innerHTML = '<i class="fas fa-check me-1"></i> Yuborildi';
+                    if (nameModalInstance) nameModalInstance.hide();
+                    toast("Natijangiz muvaffaqiyatli yuborildi!", "success");
+                } else {
+                    console.error("Telegram xato qaytardi:", results);
+                    btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Yuborish';
+                    btn.disabled = false;
+                    toast("Yuborishda xatolik: " + JSON.stringify(results[0]?.description || "Noma'lum xato"), "error");
+                    return;
                 }
+
+                setTimeout(() => {
+                    currentPage = "dashboard";
+                    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
+                    document.querySelector(".nav-item[data-page='dashboard']").classList.add("active");
+                    document.getElementById("topbar-title").textContent = "Dashboard";
+                    render();
+                }, 500);
+
+            } catch (e) {
+                console.error("Xatolik:", e);
+                btn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Yuborish';
+                btn.disabled = false;
+                toast("Xatolik: " + e.message, "error");
             }
         };
 
