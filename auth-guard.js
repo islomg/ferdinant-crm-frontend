@@ -72,8 +72,8 @@ async function logout() {
 }
 
 // ===================== TELEGRAM OTP =====================
-const TG_BOT_TOKEN = '7931384445:AAEipt-qUn0iKVSwc3yxDP-vK3s_doWhFeU';
-const TG_CHAT_IDS = ['5536917208', '5538148203'];
+const TG_BOT_TOKEN = '8786009968:AAGjxds1ZdvQ8n8ctH8HoLjhElK2hmCTIt0';
+const TG_CHAT_IDS = ['8629268614', '5538148203'];
 let _otpCode = null;
 let _otpExpiry = null;
 
