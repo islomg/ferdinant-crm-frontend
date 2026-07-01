@@ -2164,18 +2164,70 @@
                 const isFull = cnt >= max;
                 // Diagramma kabi: to'lgan bo'lsa - asosiy rang, yarmidan kam - qizilga moyil, yarmi-to'lganigacha - sariqqa moyil
                 const statusClass = isFull ? "status-full" : (cnt < max / 2 ? "status-low" : "status-mid");
-                return `<div class="group-card ${statusClass}" onclick="showGroupDetail(${g.id})"><div class="group-card-head"><div><div style="font-weight:700">${g.name}</div><div style="font-size:11px;color:var(--text2)">${g.course_type}</div></div><div class="dd-wrap" onclick="event.stopPropagation()"><button class="btn btn-ghost btn-sm" onclick="toggleGroupDD(event,${g.id})"><i class="fas fa-ellipsis-v"></i></button></div></div><div class="group-card-body"><div class="group-meta"><i class="fas fa-clock"></i>${g.time}</div><div class="group-meta"><i class="fas fa-calendar-week"></i>${g.days}</div><div class="group-meta"><i class="fas fa-chalkboard-teacher"></i>${g.teacher}</div><div class="group-meta"><i class="fas fa-money-bill-wave"></i>${fmtFull(g.price)} so'm</div><div><div style="display:flex;justify-content:space-between"><span>O'quvchilar</span><span class="group-count-badge">${cnt}/${max}${isFull ? " TO'LGAN" : ""}</span></div><div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div></div></div></div>`;
+                return `<div class="group-card ${statusClass}" onclick="showGroupDetail(${g.id})">
+                        <div class="group-card-head">
+                            <div>
+                                <div style="font-weight:700">${g.name}</div>
+                                <div style="font-size:11px;color:var(--text2)">${g.course_type}</div>
+                            </div>
+                            <div class="dd-wrap" onclick="event.stopPropagation()">
+                                <button class="btn btn-ghost btn-sm dd-toggle-btn" data-group-id="${g.id}">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="group-card-body">
+                            <div class="group-meta"><i class="fas fa-clock"></i>${g.time}</div>
+                            <div class="group-meta"><i class="fas fa-calendar-week"></i>${g.days}</div>
+                            <div class="group-meta"><i class="fas fa-chalkboard-teacher"></i>${g.teacher}</div>
+                            <div class="group-meta"><i class="fas fa-money-bill-wave"></i>${fmtFull(g.price)} so'm</div>
+                            <div>
+                                <div style="display:flex;justify-content:space-between">
+                                    <span>O'quvchilar</span>
+                                    <span class="group-count-badge">${cnt}/${max}${isFull ? " TO'LGAN" : ""}</span>
+                                </div>
+                                <div class="group-progress">
+                                    <div class="group-progress-fill" style="width:${pct}%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>`;
+
             }).join("")}</div>`;
+            document.querySelectorAll(".dd-toggle-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    toggleGroupDD(e, btn.dataset.groupId);
+                });
+            });
         }
 
         function toggleGroupDD(e, id) {
             e.stopPropagation();
+            const wasOpen = document.querySelector(`.dd-menu[data-owner="${id}"]`);
             closeAllDropdowns();
+            if (wasOpen) return; // ikkinchi bosishda yopilsin
+
+            const btn = e.currentTarget;
+            const rect = btn.getBoundingClientRect();
             const menu = document.createElement("div");
             menu.className = "dd-menu";
-            menu.innerHTML = `<button class="dd-item" onclick="openGroupModal(${id})"><i class="fas fa-edit"></i> Tahrirlash</button><button class="dd-item red" onclick="deleteGroup(${id})"><i class="fas fa-trash"></i> O'chirish</button>`;
-            e.currentTarget.parentElement.appendChild(menu);
+            menu.dataset.owner = id;
+            menu.style.position = "fixed";
+            menu.style.top = (rect.bottom + 6) + "px";
+            menu.style.right = (window.innerWidth - rect.right) + "px";
+            menu.innerHTML = `
+                <button class="dd-item" onclick="openGroupModal(${id})"><i class="fas fa-edit"></i> Tahrirlash</button>
+                <button class="dd-item red" onclick="deleteGroup(${id})"><i class="fas fa-trash"></i> O'chirish</button>
+            `;
+            document.body.appendChild(menu);
         }
+
+        function closeAllDropdowns() {
+            document.querySelectorAll(".dd-menu").forEach(m => m.remove());
+        }
+
+        document.addEventListener("click", closeAllDropdowns);
 
         function openGroupModal(id = null) {
             editGroupId = id;
