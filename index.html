@@ -993,6 +993,69 @@
             color: var(--accent)
         }
 
+        /* ===================== MOBILE BOTTOM NAV ===================== */
+        .mobile-bottom-nav {
+            display: none;
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            height: 60px;
+            background: var(--bg2);
+            border-top: 1px solid var(--border);
+            z-index: 300;
+            align-items: stretch;
+            justify-content: space-around;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            box-shadow: 0 -4px 16px rgba(0, 0, 0, .3);
+        }
+
+        .mobile-nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+            color: var(--text2);
+            font-size: 11px;
+            font-weight: 500;
+            cursor: pointer;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            position: relative;
+            transition: color .18s;
+        }
+
+        .mobile-nav-item i {
+            font-size: 18px;
+            transition: transform .15s;
+        }
+
+        .mobile-nav-item span {
+            line-height: 1;
+        }
+
+        .mobile-nav-item.active {
+            color: var(--accent);
+        }
+
+        .mobile-nav-item.active::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 26px;
+            height: 3px;
+            border-radius: 0 0 4px 4px;
+            background: var(--accent);
+        }
+
+        .mobile-nav-item:active i {
+            transform: scale(.88);
+        }
+
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
@@ -1028,8 +1091,21 @@
                 pointer-events: auto
             }
 
+            .mobile-bottom-nav {
+                display: flex;
+            }
+
+            .toast-container {
+                bottom: calc(20px + 60px + env(safe-area-inset-bottom, 0));
+            }
+
+            .main {
+                padding-bottom: 60px;
+            }
+
             .content {
-                padding: 14px
+                padding: 14px;
+                padding-bottom: calc(14px + 60px + env(safe-area-inset-bottom, 0));
             }
 
             .stats-row {
@@ -1446,6 +1522,25 @@
 
     <div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
+    <div class="mobile-bottom-nav" id="mobileBottomNav">
+        <div class="mobile-nav-item active" data-page="dashboard">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+        </div>
+        <div class="mobile-nav-item" data-page="groups">
+            <i class="fas fa-layer-group"></i>
+            <span>Guruhlar</span>
+        </div>
+        <div class="mobile-nav-item" data-page="payments">
+            <i class="fas fa-credit-card"></i>
+            <span>To'lovlar</span>
+        </div>
+        <div class="mobile-nav-item" id="mobileMenuBtn">
+            <i class="fas fa-bars"></i>
+            <span>Menu</span>
+        </div>
+    </div>
+
     <div class="main">
         <div class="topbar">
             <button class="menu-btn" onclick="openSidebar()"><i class="fas fa-bars"></i></button>
@@ -1767,28 +1862,49 @@
         }, 5000);
 
         // ===================== NAVIGATION =====================
-        document.querySelectorAll(".nav-item").forEach(el => {
-            el.addEventListener("click", () => {
-                currentPage = el.dataset.page;
-                studentSearch = "";
-                paymentSearch = "";
-                currentStudentPage = 1;
-                document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-                el.classList.add("active");
-                const titles = {
-                    dashboard: "Dashboard",
-                    groups: "Guruhlar",
-                    students: "O'quvchilar",
-                    payments: "To'lovlar",
-                    trash: "O'chirilganlar",
-                    tests: "Testlar",
-                    certificates: "Sertifikatlar",
-                    profile: "Profil"
-                };
-                document.getElementById("topbar-title").textContent = titles[currentPage] || currentPage;
-                render();
-                if (window.innerWidth <= 768) closeSidebar();
+        const pageTitles = {
+            dashboard: "Dashboard",
+            groups: "Guruhlar",
+            students: "O'quvchilar",
+            payments: "To'lovlar",
+            trash: "O'chirilganlar",
+            tests: "Testlar",
+            certificates: "Sertifikatlar",
+            profile: "Profil"
+        };
+
+        function setActiveNav(page) {
+            document.querySelectorAll(".nav-item").forEach(n => {
+                n.classList.toggle("active", n.dataset.page === page);
             });
+            document.querySelectorAll(".mobile-nav-item[data-page]").forEach(n => {
+                n.classList.toggle("active", n.dataset.page === page);
+            });
+        }
+
+        function navigateTo(page) {
+            currentPage = page;
+            studentSearch = "";
+            paymentSearch = "";
+            currentStudentPage = 1;
+            setActiveNav(page);
+            document.getElementById("topbar-title").textContent = pageTitles[page] || page;
+            render();
+            if (window.innerWidth <= 768) closeSidebar();
+        }
+
+        document.querySelectorAll(".nav-item").forEach(el => {
+            el.addEventListener("click", () => navigateTo(el.dataset.page));
+        });
+
+        // Mobil pastki footer-bar navigatsiyasi (Dashboard / Guruhlar / To'lovlar)
+        document.querySelectorAll(".mobile-nav-item[data-page]").forEach(el => {
+            el.addEventListener("click", () => navigateTo(el.dataset.page));
+        });
+
+        // Pastki bar "Menu" tugmasi - chiroyli sidebar ochadi
+        document.getElementById("mobileMenuBtn").addEventListener("click", () => {
+            openSidebar();
         });
 
         function updateTopbarStat() {
@@ -3210,8 +3326,7 @@
 
                 setTimeout(() => {
                     currentPage = "dashboard";
-                    document.querySelectorAll(".nav-item").forEach(n => n.classList.remove("active"));
-                    document.querySelector(".nav-item[data-page='dashboard']").classList.add("active");
+                    setActiveNav("dashboard");
                     document.getElementById("topbar-title").textContent = "Dashboard";
                     render();
                 }, 500);
