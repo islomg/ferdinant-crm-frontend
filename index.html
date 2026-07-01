@@ -1952,6 +1952,12 @@
         // ===================== API FUNKSIYALARI =====================
         async function loadData() {
             try {
+
+                const headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${getToken()}`
+                };
+
                 const [groupsRes, studentsRes, paymentsRes, trashRes] = await Promise.all([
                     fetch(`${API_URL}/groups/`, { headers }),
                     fetch(`${API_URL}/students/`, { headers }),
@@ -1962,7 +1968,9 @@
                 groups = await groupsRes.json();
                 students = await studentsRes.json();
                 payments = await paymentsRes.json();
+
                 const trashData = await trashRes.json();
+
                 trash = trashData.map(t => ({
                     ...t.student_data,
                     trashId: t.id,
@@ -1970,71 +1978,77 @@
                     deleted_at: t.created_at || t.deleted_at || new Date().toISOString()
                 }));
 
-                nextPId = payments.length > 0 ? Math.max(...payments.map(p => p.id)) + 1 : 1;
+                nextPId = payments.length > 0
+                    ? Math.max(...payments.map(p => p.id)) + 1
+                    : 1;
+
                 await checkNewMonthDebts();
+
                 updateTopbarStat();
                 render();
+
             } catch (e) {
                 console.error("Backendga ulanishda xatolik:", e);
-                toast("Backendga ulanishda xatolik! Server ishlayotganligini tekshiring.", "error");
+                toast(
+                    "Backendga ulanishda xatolik! Server ishlayotganligini tekshiring.",
+                    "error"
+                );
             }
-            async function checkNewMonthDebts() {
+        }
 
-                const currentPeriod =
-                    `${curYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+        async function checkNewMonthDebts() {
 
-                let changed = false;
+            const headers = {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${getToken()}`
+            };
 
-                for (const student of students) {
+            const currentPeriod =
+                `${curYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
 
-                    if (student.period !== currentPeriod) {
+            let changed = false;
 
-                        const oldDebt = student.debt_amount;
+            for (const student of students) {
 
-                        const newOriginalDebt =
-                            student.original_debt + oldDebt;
+                if (student.period !== currentPeriod) {
 
-                        const updateData = {
-                            ...student,
+                    const oldDebt = student.debt_amount;
 
-                            original_debt: newOriginalDebt,
+                    const newOriginalDebt =
+                        student.original_debt + oldDebt;
 
-                            paid_amount: 0,
+                    const updateData = {
+                        ...student,
+                        original_debt: newOriginalDebt,
+                        paid_amount: 0,
+                        debt_amount: newOriginalDebt,
+                        payment_status: "debt",
+                        period: currentPeriod
+                    };
 
-                            debt_amount: newOriginalDebt,
-
-                            payment_status: "debt",
-
-                            period: currentPeriod
-                        };
-
-                        const res = await fetch(
-                            `${API_URL}/students/${student.id}/`,
-                            {
-                                method: "PUT",
-
-                                headers: {
-                                    "Content-Type": "application/json"
-                                },
-
-                                body: JSON.stringify(updateData)
-                            }
-                        );
-
-                        if (res.ok) {
-                            changed = true;
+                    const res = await fetch(
+                        `${API_URL}/students/${student.id}/`,
+                        {
+                            method: "PUT",
+                            headers,
+                            body: JSON.stringify(updateData)
                         }
+                    );
+
+                    if (res.ok) {
+                        changed = true;
                     }
                 }
+            }
 
-                if (changed) {
+            if (changed) {
 
-                    const studentsRes =
-                        await fetch(`${API_URL}/students/`);
+                const studentsRes = await fetch(
+                    `${API_URL}/students/`,
+                    { headers }
+                );
 
-                    students =
-                        await studentsRes.json();
-                }
+                students = await studentsRes.json();
             }
         }
 
