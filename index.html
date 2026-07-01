@@ -2318,32 +2318,66 @@
 
         async function saveGroup() {
             const name = document.getElementById("m-gname").value.trim();
-            if (!name) return toast("Guruh nomi kiritilishi shart!", "error");
-            const maxStudents = parseInt(document.getElementById("m-gmax").value) || 17;
+
+            if (!name) {
+                return toast("Guruh nomi kiritilishi shart!", "error");
+            }
+
+            const maxStudents =
+                parseInt(document.getElementById("m-gmax").value) || 17;
+
             const data = {
                 name,
                 time: document.getElementById("m-gtime").value,
                 days: document.getElementById("m-gdays").value,
-                course_type: document.getElementById("m-gcourse").value.trim() || "Boshqa",
-                teacher: document.getElementById("m-gteacher").value.trim() || "—",
+                course_type:
+                    document.getElementById("m-gcourse").value.trim() || "Boshqa",
+                teacher:
+                    document.getElementById("m-gteacher").value.trim() || "—",
                 price: getMoneyVal("m-gprice"),
                 max_students: maxStudents
             };
+
+            const headers = {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${getToken()}`
+            };
+
             if (editGroupId) {
-                const res = await fetch(`${API_URL}/groups/${editGroupId}/`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (res.ok) toast("Guruh tahrirlandi");
+
+                const res = await fetch(
+                    `${API_URL}/groups/${editGroupId}/`,
+                    {
+                        method: "PUT",
+                        headers,
+                        body: JSON.stringify(data)
+                    }
+                );
+
+                if (res.ok) {
+                    toast("Guruh tahrirlandi");
+                } else {
+                    toast("Guruhni tahrirlashda xatolik!", "error");
+                }
+
             } else {
-                const res = await fetch(`${API_URL}/groups/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-                if (res.ok) toast("Yangi guruh qo'shildi");
+
+                const res = await fetch(
+                    `${API_URL}/groups/`,
+                    {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify(data)
+                    }
+                );
+
+                if (res.ok) {
+                    toast("Yangi guruh qo'shildi");
+                } else {
+                    toast("Guruh qo'shishda xatolik!", "error");
+                }
             }
+
             closeModal("group-modal");
             await loadData();
         }
