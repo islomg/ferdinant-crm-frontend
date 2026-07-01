@@ -594,11 +594,14 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            transition: border-color .18s;
+            cursor: pointer;
+            transition: border-color .18s, transform .18s, box-shadow .18s;
         }
 
         .student-item:hover {
-            border-color: var(--border2)
+            border-color: rgba(59, 130, 246, 0.35);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
         }
 
         .student-avatar {
@@ -991,6 +994,62 @@
 
         .detail-back:hover {
             color: var(--accent)
+        }
+
+        /* ===================== STUDENT DETAIL PAGE ===================== */
+        .student-detail-grid {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 16px;
+            align-items: start;
+        }
+
+        .student-detail-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 20px;
+        }
+
+        .student-detail-left {
+            position: sticky;
+            top: 0;
+        }
+
+        .student-detail-divider {
+            height: 1px;
+            background: var(--border);
+            margin: 4px 0 14px;
+        }
+
+        .student-detail-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 13px;
+            color: var(--text2);
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .student-detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .student-detail-row span:last-child {
+            color: var(--text1);
+            font-weight: 600;
+            font-family: var(--mono);
+        }
+
+        @media (max-width: 900px) {
+            .student-detail-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .student-detail-left {
+                position: static;
+            }
         }
 
         /* ===================== MOBILE BOTTOM NAV ===================== */
@@ -1709,6 +1768,8 @@
         let editGroupId = null;
         let editStudentId = null;
         let editPaymentId = null;
+        let viewingStudentId = null;
+        let viewingBackTo = 'students';
         let moveStudentId = null;
         let currentPayStudentId = null;
         let chartInstance = null;
@@ -1891,6 +1952,7 @@
             studentSearch = "";
             paymentSearch = "";
             currentStudentPage = 1;
+            viewingStudentId = null;
             setActiveNav(page);
             document.getElementById("topbar-title").textContent = pageTitles[page] || page;
             render();
@@ -1919,6 +1981,13 @@
         }
 
         function render() {
+            if (viewingStudentId !== null) {
+                if (students.find(s => s.id === viewingStudentId)) {
+                    showStudentDetail(viewingStudentId, viewingBackTo);
+                    return;
+                }
+                viewingStudentId = null;
+            }
             if (currentPage === "dashboard") renderDashboard();
             else if (currentPage === "groups") renderGroups();
             else if (currentPage === "students") renderStudents();
@@ -2102,6 +2171,97 @@
             ${grStudents.length === 0 ? `<div class="empty"><i class="fas fa-user-graduate"></i><p>Bu guruhda o'quvchi yo'q</p></div>` : ""}
         </div>`;
         }
+        // ===================== O'QUVCHI TAFSILOTI (DETAIL PAGE) =====================
+        function closeStudentDetail() {
+            viewingStudentId = null;
+            if (viewingBackTo && viewingBackTo.startsWith("group:")) {
+                showGroupDetail(parseInt(viewingBackTo.split(":")[1]));
+            } else {
+                renderStudents();
+            }
+        }
+
+        function showStudentDetail(studentId, backTo = "students") {
+            const s = students.find(st => st.id === studentId);
+            if (!s) {
+                viewingStudentId = null;
+                renderStudents();
+                return;
+            }
+            viewingStudentId = studentId;
+            viewingBackTo = backTo;
+
+            const grp = groups.find(g => g.id === s.group);
+            const col = hashColor(s.name);
+            const stPayments = payments.filter(p => p.student === studentId).sort((a, b) => b.id - a.id);
+            const totalPaidAll = stPayments.reduce((sum, p) => sum + p.amount, 0);
+
+            let statusBadge = "";
+            if (s.debt_amount <= 0) {
+                statusBadge = `<span class="badge badge-paid"><i class="fas fa-check-circle"></i> To'langan ✅</span>`;
+            } else if (s.paid_amount > 0) {
+                statusBadge = `<span class="badge badge-partial"><i class="fas fa-exclamation-triangle"></i> Qisman to'langan</span>`;
+            } else {
+                statusBadge = `<span class="badge badge-debt"><i class="fas fa-times-circle"></i> Qarzdor</span>`;
+            }
+
+            document.getElementById("content").innerHTML = `
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+            <div class="detail-back" onclick="closeStudentDetail()"><i class="fas fa-arrow-left"></i> Orqaga</div>
+            <div style="display:flex;gap:8px;margin-left:auto;flex-wrap:wrap">
+                <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})"><i class="fas fa-credit-card"></i> <span class="add-student-label">To'lov qilish</span></button>
+                <button class="btn btn-ghost btn-sm" onclick="openMoveModal(${s.id})" title="Guruhga ko'chirish"><i class="fas fa-arrows-alt"></i></button>
+                <button class="btn btn-ghost btn-sm" onclick="openStudentModal(${s.id})" title="Tahrirlash"><i class="fas fa-edit"></i></button>
+                <button class="btn btn-danger btn-sm" onclick="deleteStudent(${s.id})" title="O'chirish"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+        <div class="student-detail-grid">
+            <div class="student-detail-left">
+                <div class="student-detail-card">
+                    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+                        <div class="student-avatar" style="width:56px;height:56px;font-size:20px;border-radius:14px;background:${col}22;color:${col}">${initials(s.name)}</div>
+                        <div style="min-width:0">
+                            <div style="font-size:19px;font-weight:700;color:var(--text1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.name}</div>
+                            <div style="font-size:13px;color:var(--text2);margin-top:2px"><i class="fas fa-layer-group"></i> ${grp?.name || "Guruhsiz"}</div>
+                        </div>
+                    </div>
+                    <div style="margin-bottom:14px">${statusBadge}</div>
+                    <div class="student-detail-divider"></div>
+                    <div class="student-detail-row"><span>Guruh narxi</span><span>${fmtFull(s.original_debt)} so'm</span></div>
+                    <div class="student-detail-row"><span>To'langan</span><span style="color:var(--green)">${fmtFull(s.paid_amount)} so'm</span></div>
+                    <div class="student-detail-row"><span>Qolgan qarz</span><span style="color:${s.debt_amount > 0 ? "var(--red)" : "var(--green)"}">${s.debt_amount > 0 ? fmtFull(s.debt_amount) + " so'm" : "Yo'q ✓"}</span></div>
+                    ${grp ? `
+                    <div class="student-detail-divider"></div>
+                    <div class="student-detail-row"><span><i class="fas fa-clock"></i> Dars vaqti</span><span>${grp.time}</span></div>
+                    <div class="student-detail-row"><span><i class="fas fa-calendar-week"></i> Dars kunlari</span><span>${grp.days}</span></div>
+                    <div class="student-detail-row"><span><i class="fas fa-chalkboard-teacher"></i> O'qituvchi</span><span>${grp.teacher}</span></div>
+                    ` : ""}
+                </div>
+            </div>
+            <div class="student-detail-right">
+                <div class="student-detail-card">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+                        <div style="font-size:15px;font-weight:700;color:var(--text1)"><i class="fas fa-receipt"></i> To'lovlar tarixi (${stPayments.length})</div>
+                        <div style="font-size:12px;color:var(--text2)">Jami: <span style="color:var(--green);font-weight:700;font-family:var(--mono)">${fmtFull(totalPaidAll)} so'm</span></div>
+                    </div>
+                    <div>
+                        ${stPayments.map(p => `<div class="pay-item">
+                            <div class="pay-info">
+                                <div class="pay-name">${p.month} ${p.year}</div>
+                                <div class="pay-date"><i class="fas fa-calendar-day"></i> ${p.date}</div>
+                            </div>
+                            <div class="pay-amount">+${fmt(p.amount)}</div>
+                            <div class="pay-actions">
+                                <button class="btn btn-warning btn-sm" onclick="openEditPayModal(${p.id})" title="Tahrirlash"><i class="fas fa-edit"></i></button>
+                                <button class="btn btn-danger btn-sm" onclick="deletePayment(${p.id})" title="O'chirish"><i class="fas fa-trash"></i></button>
+                            </div>
+                        </div>`).join("") || `<div class="empty"><i class="fas fa-receipt"></i><p>Hali to'lov qilinmagan</p></div>`}
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        }
+
         // ===================== STUDENTS =====================
         function renderStudents() {
             const filtered = students.filter(s => s.name.toLowerCase().includes(studentSearch.toLowerCase()));
@@ -2167,13 +2327,14 @@
                 statusBadge = `<span class="badge badge-debt"><i class="fas fa-times-circle"></i> Qarzdor: ${fmtFull(s.debt_amount)} so'm</span>`;
             }
 
-            return `<div class="student-item">
+            const backTo = inGroup ? `group:${s.group}` : 'students';
+            return `<div class="student-item" onclick="showStudentDetail(${s.id},'${backTo}')">
         <div class="student-avatar" style="background:${col}22;color:${col}">${initials(s.name)}</div>
         <div class="student-info">
             <div class="student-name">${s.name}</div>
             <div class="student-sub">${grp?.name || "Guruhsiz"} · ${statusBadge}</div>
         </div>
-        <div class="student-actions">
+        <div class="student-actions" onclick="event.stopPropagation()">
             <button class="btn btn-success btn-sm" onclick="openPayModal(${s.id})" title="To'lov qilish"><i class="fas fa-credit-card"></i></button>
             ${!inGroup ? `<button class="btn btn-ghost btn-sm" onclick="openMoveModal(${s.id})" title="Guruhga ko'chirish"><i class="fas fa-arrows-alt"></i></button>` : ""}
             <button class="btn btn-ghost btn-sm" onclick="openStudentModal(${s.id})" title="Tahrirlash"><i class="fas fa-edit"></i></button>
