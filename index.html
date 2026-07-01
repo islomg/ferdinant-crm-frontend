@@ -2182,6 +2182,7 @@
             document.getElementById("m-gdays").value = g?.days || "DCHJ";
             document.getElementById("m-gcourse").value = g?.course_type || "";
             document.getElementById("m-gteacher").value = g?.teacher || "";
+            document.getElementById("m-gmax").value = g?.max_students || 17;
             setMoneyVal("m-gprice", g?.price || 500000);
             openModal("group-modal");
         }
@@ -2189,6 +2190,7 @@
         async function saveGroup() {
             const name = document.getElementById("m-gname").value.trim();
             if (!name) return toast("Guruh nomi kiritilishi shart!", "error");
+            const maxStudents = parseInt(document.getElementById("m-gmax").value) || 17;
             const data = {
                 name,
                 time: document.getElementById("m-gtime").value,
@@ -2196,7 +2198,7 @@
                 course_type: document.getElementById("m-gcourse").value.trim() || "Boshqa",
                 teacher: document.getElementById("m-gteacher").value.trim() || "—",
                 price: getMoneyVal("m-gprice"),
-                max_students: 17
+                max_students: maxStudents
             };
             if (editGroupId) {
                 const res = await fetch(`${API_URL}/groups/${editGroupId}/`, {
