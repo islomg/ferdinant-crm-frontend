@@ -1858,6 +1858,8 @@
         let currentPayStudentId = null;
         let chartInstance = null;
         let chartYear = new Date().getFullYear();
+        let payHistoryMonth = null; // to'lovlar tarixi filtri uchun oy (null = hali o'rnatilmagan, curMonth() bilan to'ldiriladi)
+        let payHistoryYear = null;  // to'lovlar tarixi filtri uchun yil
 
         // Test uchun global o'zgaruvchilar
         let testQuestions = [];
@@ -2037,6 +2039,12 @@
             paymentSearch = "";
             currentStudentPage = 1;
             viewingStudentId = null;
+            if (page === "payments") {
+                // To'lovlar bo'limiga har kirilganda tarix joriy oyga va 1-sahifaga qaytariladi
+                payHistoryMonth = null;
+                payHistoryYear = null;
+                currentHistoryPage = 1;
+            }
             setActiveNav(page);
             document.getElementById("topbar-title").textContent = pageTitles[page] || page;
             render();
@@ -2591,9 +2599,20 @@
 
         let currentPaymentPage = 1;
         const PAY_PER_PAGE = 10;
+        let currentHistoryPage = 1;
+        const HISTORY_PER_PAGE = 10;
 
         function renderPayments() {
             const content = document.getElementById("content");
+
+            // Tarix filtri faqat birinchi marta (yoki oy/yil hali tanlanmagan bo'lsa) joriy oy/yilga
+            // o'rnatiladi — shunda yangi oy boshlanganda avtomatik o'sha oy ko'rsatiladi, lekin
+            // foydalanuvchi boshqa oyni tanlab qo'ysa, keyingi render() chaqiruvlarida tanlovi buzilmaydi.
+            if (payHistoryMonth === null || payHistoryYear === null) {
+                payHistoryMonth = curMonth();
+                payHistoryYear = curYear();
+                currentHistoryPage = 1;
+            }
 
             if (!document.getElementById("pay-students-list")) {
                 content.innerHTML = `
@@ -2603,8 +2622,15 @@
             <div id="pay-students-list"></div>
             <div id="pay-students-pagination" class="pagination" style="margin-bottom:16px"></div>
             <div class="chart-box">
-                <div id="pay-history-title" class="section-title">To'lovlar tarixi</div>
+                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+                    <div id="pay-history-title" class="section-title" style="margin:0">To'lovlar tarixi</div>
+                    <div style="display:flex;gap:8px">
+                        <select id="ph-month" style="min-width:110px"></select>
+                        <select id="ph-year" style="min-width:90px"></select>
+                    </div>
+                </div>
                 <div id="pay-history-list"></div>
+                <div id="pay-history-pagination" class="pagination" style="margin-top:10px"></div>
             </div>`;
 
                 document.getElementById("p-search").addEventListener("input", e => {
@@ -2612,11 +2638,38 @@
                     currentPaymentPage = 1;
                     _refreshPaymentList();
                 });
+
+                document.getElementById("ph-month").addEventListener("change", e => {
+                    payHistoryMonth = e.target.value;
+                    currentHistoryPage = 1;
+                    _refreshPaymentList();
+                });
+
+                document.getElementById("ph-year").addEventListener("change", e => {
+                    payHistoryYear = parseInt(e.target.value);
+                    currentHistoryPage = 1;
+                    _refreshPaymentList();
+                });
             }
 
             const searchEl = document.getElementById("p-search");
             if (searchEl && searchEl.value !== paymentSearch) {
                 searchEl.value = paymentSearch;
+            }
+
+            // Oy tanlovini to'ldirish (har doim joriy holatga moslab)
+            const monthSel = document.getElementById("ph-month");
+            if (monthSel) {
+                monthSel.innerHTML = MONTHS_UZ.map(m => `<option value="${m}" ${m === payHistoryMonth ? "selected" : ""}>${m}</option>`).join("");
+            }
+
+            // Yil tanlovini to'ldirish: to'lovlarda uchragan yillar + joriy yil
+            const yearSel = document.getElementById("ph-year");
+            if (yearSel) {
+                const years = new Set(payments.map(p => p.year));
+                years.add(curYear());
+                const sortedYears = [...years].sort((a, b) => b - a);
+                yearSel.innerHTML = sortedYears.map(y => `<option value="${y}" ${y === payHistoryYear ? "selected" : ""}>${y}</option>`).join("");
             }
 
             _refreshPaymentList();
@@ -2655,13 +2708,24 @@
                 pagStudEl.innerHTML = pages;
             }
 
+            // Faqat tanlangan oy/yilga tegishli to'lovlar - boshqa oylar bilan aralashmasligi uchun
+            const monthFilteredPayments = [...payments]
+                .filter(p => p.month === payHistoryMonth && p.year === payHistoryYear)
+                .sort((a, b) => b.id - a.id);
+
+            const totalHistoryPages = Math.ceil(monthFilteredPayments.length / HISTORY_PER_PAGE) || 1;
+            if (currentHistoryPage > totalHistoryPages) currentHistoryPage = 1;
+            const historySlice = monthFilteredPayments.slice(
+                (currentHistoryPage - 1) * HISTORY_PER_PAGE,
+                currentHistoryPage * HISTORY_PER_PAGE
+            );
+
             const titleEl = document.getElementById("pay-history-title");
-            if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payments.length})`;
+            if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payHistoryMonth} ${payHistoryYear}) — ${monthFilteredPayments.length}`;
 
             const histEl = document.getElementById("pay-history-list");
             if (histEl) {
-                histEl.innerHTML = [...payments]
-                    .sort((a, b) => b.id - a.id)
+                histEl.innerHTML = historySlice
                     .map(p => {
                         const st = students.find(s => s.id === p.student);
                         let debtText = "To'liq to'langan";
@@ -2685,6 +2749,15 @@
                     </div>
                 </div>`;
                     }).join("") || '<div class="empty"><i class="fas fa-receipt"></i><p>Hali to\'lov yo\'q</p></div>';
+            }
+
+            const pagHistEl = document.getElementById("pay-history-pagination");
+            if (pagHistEl) {
+                let histPages = "";
+                for (let i = 1; i <= totalHistoryPages; i++) {
+                    histPages += `<button class="page-btn ${i === currentHistoryPage ? "active" : ""}" onclick="currentHistoryPage=${i};_refreshPaymentList()">${i}</button>`;
+                }
+                pagHistEl.innerHTML = totalHistoryPages > 1 ? histPages : "";
             }
         }
 
