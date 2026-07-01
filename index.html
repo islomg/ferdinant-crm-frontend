@@ -1953,10 +1953,10 @@
         async function loadData() {
             try {
                 const [groupsRes, studentsRes, paymentsRes, trashRes] = await Promise.all([
-                    fetch(`${API_URL}/groups/`),
-                    fetch(`${API_URL}/students/`),
-                    fetch(`${API_URL}/payments/`),
-                    fetch(`${API_URL}/trash/`)
+                    fetch(`${API_URL}/groups/`, { headers }),
+                    fetch(`${API_URL}/students/`, { headers }),
+                    fetch(`${API_URL}/payments/`, { headers }),
+                    fetch(`${API_URL}/trash/`, { headers })
                 ]);
 
                 groups = await groupsRes.json();
