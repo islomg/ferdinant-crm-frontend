@@ -1971,11 +1971,70 @@
                 }));
 
                 nextPId = payments.length > 0 ? Math.max(...payments.map(p => p.id)) + 1 : 1;
+                await checkNewMonthDebts();
                 updateTopbarStat();
                 render();
             } catch (e) {
                 console.error("Backendga ulanishda xatolik:", e);
                 toast("Backendga ulanishda xatolik! Server ishlayotganligini tekshiring.", "error");
+            }
+            async function checkNewMonthDebts() {
+
+                const currentPeriod =
+                    `${curYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`;
+
+                let changed = false;
+
+                for (const student of students) {
+
+                    if (student.period !== currentPeriod) {
+
+                        const oldDebt = student.debt_amount;
+
+                        const newOriginalDebt =
+                            student.original_debt + oldDebt;
+
+                        const updateData = {
+                            ...student,
+
+                            original_debt: newOriginalDebt,
+
+                            paid_amount: 0,
+
+                            debt_amount: newOriginalDebt,
+
+                            payment_status: "debt",
+
+                            period: currentPeriod
+                        };
+
+                        const res = await fetch(
+                            `${API_URL}/students/${student.id}/`,
+                            {
+                                method: "PUT",
+
+                                headers: {
+                                    "Content-Type": "application/json"
+                                },
+
+                                body: JSON.stringify(updateData)
+                            }
+                        );
+
+                        if (res.ok) {
+                            changed = true;
+                        }
+                    }
+                }
+
+                if (changed) {
+
+                    const studentsRes =
+                        await fetch(`${API_URL}/students/`);
+
+                    students =
+                        await studentsRes.json();
+                }
             }
         }
 
