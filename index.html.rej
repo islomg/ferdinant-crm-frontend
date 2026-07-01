@@ -1,0 +1,10 @@
+diff a/frontend/index.html b/frontend/index.html	(rejected hunks)
+@@ -1937,7 +1940,7 @@
+             const totalIncome = payments.reduce((s, p) => s + p.amount, 0);
+             const totalDebt = students.reduce((s, st) => s + st.debt_amount, 0);
+             const debtors = students.filter(s => s.debt_amount > 0).length;
+-            const recentPays = [...payments].sort((a, b) => b.id - a.id).slice(0, 8);
++            const recentPays = payments.filter(p => p.month === curMonth() && p.year === curYear()).sort((a, b) => b.id - a.id).slice(0, 8);
+ 
+             document.getElementById("content").innerHTML = `
+         <div class="stats-row">

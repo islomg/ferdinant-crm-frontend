@@ -585,6 +585,71 @@
             transition: width .4s
         }
 
+        .group-card::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--accent), var(--accent2));
+            opacity: .9;
+        }
+
+        .group-count-badge {
+            font-weight: 600;
+            color: var(--accent);
+            transition: color .3s;
+        }
+
+        .group-card.status-low {
+            border-color: rgba(239, 68, 68, .22);
+            background: linear-gradient(160deg, rgba(239, 68, 68, .08), var(--card) 60%);
+        }
+
+        .group-card.status-low::before {
+            background: linear-gradient(90deg, #f43f5e, #f59e0b);
+        }
+
+        .group-card.status-low:hover {
+            border-color: rgba(239, 68, 68, .4);
+            box-shadow: 0 10px 30px rgba(239, 68, 68, .12);
+        }
+
+        .group-card.status-low .group-progress-fill {
+            background: linear-gradient(90deg, #f43f5e, #f59e0b);
+        }
+
+        .group-card.status-low .group-count-badge {
+            color: #fb7185;
+        }
+
+        .group-card.status-mid {
+            border-color: rgba(245, 158, 11, .22);
+            background: linear-gradient(160deg, rgba(245, 158, 11, .08), var(--card) 60%);
+        }
+
+        .group-card.status-mid::before {
+            background: linear-gradient(90deg, #f59e0b, #eab308);
+        }
+
+        .group-card.status-mid:hover {
+            border-color: rgba(245, 158, 11, .4);
+            box-shadow: 0 10px 30px rgba(245, 158, 11, .12);
+        }
+
+        .group-card.status-mid .group-progress-fill {
+            background: linear-gradient(90deg, #f59e0b, #eab308);
+        }
+
+        .group-card.status-mid .group-count-badge {
+            color: #fbbf24;
+        }
+
+        .group-card.status-full .group-count-badge {
+            color: var(--accent);
+        }
+
         .student-item {
             background: var(--card);
             border: 1px solid var(--border);
@@ -2062,10 +2127,13 @@
             document.getElementById("content").innerHTML = `
             <div class="filter-bar"><button class="btn btn-ghost ${groupFilter === "all" ? "active" : ""}" onclick="groupFilter='all';renderGroups()">Barchasi (${groups.length})</button><button class="btn btn-ghost ${groupFilter === "DCHJ" ? "active" : ""}" onclick="groupFilter='DCHJ';renderGroups()">DCHJ</button><button class="btn btn-ghost ${groupFilter === "SPSH" ? "active" : ""}" onclick="groupFilter='SPSH';renderGroups()">SPSH</button><button class="btn btn-primary btn-sm" style="margin-left:auto;flex-shrink:0" onclick="openGroupModal()"><i class="fas fa-plus"></i> <span class="add-group-label">Guruh qo'shish</span></button></div>
         <div class="groups-grid">${filtered.map(g => {
+                const max = g.max_students || 17;
                 const cnt = students.filter(s => s.group === g.id).length;
-                const pct = Math.min(100, Math.round(cnt / (g.max_students || 17) * 100));
-                const isFull = cnt >= (g.max_students || 17);
-                return `<div class="group-card" onclick="showGroupDetail(${g.id})"><div class="group-card-head"><div><div style="font-weight:700">${g.name}</div><div style="font-size:11px;color:var(--text2)">${g.course_type}</div></div><div class="dd-wrap" onclick="event.stopPropagation()"><button class="btn btn-ghost btn-sm" onclick="toggleGroupDD(event,${g.id})"><i class="fas fa-ellipsis-v"></i></button></div></div><div class="group-card-body"><div class="group-meta"><i class="fas fa-clock"></i>${g.time}</div><div class="group-meta"><i class="fas fa-calendar-week"></i>${g.days}</div><div class="group-meta"><i class="fas fa-chalkboard-teacher"></i>${g.teacher}</div><div class="group-meta"><i class="fas fa-money-bill-wave"></i>${fmtFull(g.price)} so'm</div><div><div style="display:flex;justify-content:space-between"><span>O'quvchilar</span><span>${cnt}/${g.max_students || 17}${isFull ? " TO'LGAN" : ""}</span></div><div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div></div></div></div>`;
+                const pct = Math.min(100, Math.round(cnt / max * 100));
+                const isFull = cnt >= max;
+                // Diagramma kabi: to'lgan bo'lsa - asosiy rang, yarmidan kam - qizilga moyil, yarmi-to'lganigacha - sariqqa moyil
+                const statusClass = isFull ? "status-full" : (cnt < max / 2 ? "status-low" : "status-mid");
+                return `<div class="group-card ${statusClass}" onclick="showGroupDetail(${g.id})"><div class="group-card-head"><div><div style="font-weight:700">${g.name}</div><div style="font-size:11px;color:var(--text2)">${g.course_type}</div></div><div class="dd-wrap" onclick="event.stopPropagation()"><button class="btn btn-ghost btn-sm" onclick="toggleGroupDD(event,${g.id})"><i class="fas fa-ellipsis-v"></i></button></div></div><div class="group-card-body"><div class="group-meta"><i class="fas fa-clock"></i>${g.time}</div><div class="group-meta"><i class="fas fa-calendar-week"></i>${g.days}</div><div class="group-meta"><i class="fas fa-chalkboard-teacher"></i>${g.teacher}</div><div class="group-meta"><i class="fas fa-money-bill-wave"></i>${fmtFull(g.price)} so'm</div><div><div style="display:flex;justify-content:space-between"><span>O'quvchilar</span><span class="group-count-badge">${cnt}/${max}${isFull ? " TO'LGAN" : ""}</span></div><div class="group-progress"><div class="group-progress-fill" style="width:${pct}%"></div></div></div></div></div>`;
             }).join("")}</div>`;
         }
 
