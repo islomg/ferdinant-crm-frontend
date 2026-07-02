@@ -3010,8 +3010,14 @@
                 currentHistoryPage * HISTORY_PER_PAGE
             );
 
+            // Tanlangan oy/yil uchun jami tushum (qidiruvga bog'liq bo'lmagan holda, dashboarddagi
+            // "oyi tushumi" kartasi bilan bir xil mantiqda hisoblanadi)
+            const monthTotalIncome = payments
+                .filter(p => p.month === payHistoryMonth && p.year === payHistoryYear)
+                .reduce((sum, p) => sum + p.amount, 0);
+
             const titleEl = document.getElementById("pay-history-title");
-            if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payHistoryMonth} ${payHistoryYear}) — ${monthFilteredPayments.length}`;
+            if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payHistoryMonth} ${payHistoryYear} — ${fmt(monthTotalIncome)} so'm) — ${monthFilteredPayments.length}`;
 
             const histEl = document.getElementById("pay-history-list");
             if (histEl) {
