@@ -1746,7 +1746,21 @@
         </div>
     </div>
 
+    <!-- Universal tasdiqlash modali (confirm() o'rniga) -->
+    <div class="modal-backdrop" id="confirm-modal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-triangle-exclamation" style="color:var(--danger,#e5484d)"></i>
+                <span id="confirm-modal-title">Tasdiqlash</span></div>
+            <div id="confirm-modal-message" style="white-space:pre-line;color:var(--text1);padding:8px 0 4px"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="confirm-modal-cancel">Bekor</button>
+                <button class="btn btn-danger" id="confirm-modal-ok"><i class="fas fa-trash"></i> Tasdiqlash</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Test natijasi uchun modal (faqat ism so'rash) -->
+
     <div class="modal fade" id="nameModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
         aria-labelledby="nameModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
@@ -1902,6 +1916,44 @@
 
         function closeModal(id) {
             document.getElementById(id).classList.remove("open");
+        }
+
+        // Universal tasdiqlash modali: window.confirm() o'rniga ishlatiladi.
+        // Promise qaytaradi: true - "Tasdiqlash" bosildi, false - bekor qilindi.
+        // Ixtiyoriy options: { title, okText, okClass }
+        function showConfirm(message, options = {}) {
+            const {
+                title = "Tasdiqlash",
+                okText = "Tasdiqlash",
+                okClass = "btn-danger"
+            } = options;
+
+            return new Promise((resolve) => {
+                document.getElementById("confirm-modal-title").textContent = title;
+                document.getElementById("confirm-modal-message").textContent = message;
+
+                const okBtn = document.getElementById("confirm-modal-ok");
+                const cancelBtn = document.getElementById("confirm-modal-cancel");
+
+                okBtn.className = "btn " + okClass;
+                okBtn.innerHTML = `<i class="fas fa-check"></i> ${okText}`;
+
+                // Eski listenerlarni olib tashlash uchun tugmalarni klonlaymiz.
+                const newOkBtn = okBtn.cloneNode(true);
+                okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+                const finish = (result) => {
+                    closeModal("confirm-modal");
+                    resolve(result);
+                };
+
+                newOkBtn.onclick = () => finish(true);
+                newCancelBtn.onclick = () => finish(false);
+
+                openModal("confirm-modal");
+            });
         }
 
         function openSidebar() {
@@ -2715,7 +2767,8 @@
             // shu oy nechta dars o'qigani va (proporsional) qarzdorlik summasi ko'rsatiladi.
             if (actualDebt > 0) {
                 const confirmMsg = `"${s.name}" bu oyda ${lessonsSoFar} ta dars o'qigan va ${fmtFull(actualDebt)} so'm qarzdorligi bor.\n\nRostan ham o'chirmoqchimisiz?`;
-                if (!confirm(confirmMsg)) return;
+                const ok = await showConfirm(confirmMsg, { title: "O'quvchini o'chirish", okText: "O'chirish" });
+                if (!ok) return;
             }
             // Qarzdorlik bo'lmasa hech narsa so'ralmaydi, to'g'ridan-to'g'ri o'chiriladi.
 
