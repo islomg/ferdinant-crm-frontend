@@ -2145,6 +2145,7 @@
                 const cnt = students.filter(s => s.group === g.id).length;
                 const pct = Math.min(100, Math.round(cnt / max * 100));
                 const percent = (cnt / max) * 100;
+                const isFull = cnt >= max;
 
                 let statusClass = "status-full";
 
