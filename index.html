@@ -1772,6 +1772,7 @@
         let chartYear = new Date().getFullYear();
         let payHistoryMonth = null; // to'lovlar tarixi filtri uchun oy (null = hali o'rnatilmagan, curMonth() bilan to'ldiriladi)
         let payHistoryYear = null;  // to'lovlar tarixi filtri uchun yil
+        let historySearch = "";     // to'lovlar tarixida o'quvchi bo'yicha qidirish
 
         // Test uchun global o'zgaruvchilar
         let testQuestions = [];
@@ -2102,7 +2103,8 @@
         </div>
         <div class="chart-box"><div class="section-title">Oxirgi to'lovlar</div>${recentPays.length ? recentPays.map(p => {
                 const st = students.find(s => s.id === p.student);
-                return `<div class="pay-item"><div class="pay-dot" style="background:${st?.debt_amount > 0 ? (st.paid_amount > 0 ? 'var(--amber)' : 'var(--red)') : 'var(--green)'}"></div><div class="pay-info"><div class="pay-name">${st?.name || "O'chirilgan"}</div><div class="pay-date">${p.month} ${p.year} · ${p.date}</div><div class="pay-sub">💰 To'langan: ${fmt(p.amount)} | 📌 ${st?.debt_amount > 0 ? (st.paid_amount > 0 ? fmtFull(st.debt_amount) + " so'm qarz" : "To'liq qarzdor") : "To'liq to'langan"}</div></div><div class="pay-amount">+${fmt(p.amount)}</div></div>`;
+                const displayName = st?.name || p.student_name_snapshot || "Noma'lum";
+                return `<div class="pay-item"><div class="pay-dot" style="background:${st?.debt_amount > 0 ? (st.paid_amount > 0 ? 'var(--amber)' : 'var(--red)') : 'var(--green)'}"></div><div class="pay-info"><div class="pay-name">${displayName}${!st ? ' <span style="background:rgba(239,68,68,0.12);color:var(--red);padding:1px 8px;border-radius:20px;font-size:11px;font-weight:600;vertical-align:middle">O\'chirilgan</span>' : ''}</div><div class="pay-date">${p.month} ${p.year} · ${p.date}</div><div class="pay-sub">💰 To'langan: ${fmt(p.amount)} | 📌 ${st?.debt_amount > 0 ? (st.paid_amount > 0 ? fmtFull(st.debt_amount) + " so'm qarz" : "To'liq qarzdor") : "To'liq to'langan"}</div></div><div class="pay-amount">+${fmt(p.amount)}</div></div>`;
             }).join("") : `<div class="empty"><i class="fas fa-receipt"></i><p>Hali to'lov yo'q</p></div>`}</div>`;
             setTimeout(() => buildChart(), 80);
         }
@@ -2703,7 +2705,8 @@
             <div class="chart-box">
                 <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
                     <div id="pay-history-title" class="section-title" style="margin:0">To'lovlar tarixi</div>
-                    <div style="display:flex;gap:8px">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap">
+                        <input id="ph-search" placeholder="🔍 O'quvchi izlash..." style="min-width:160px">
                         <select id="ph-month" style="min-width:110px"></select>
                         <select id="ph-year" style="min-width:90px"></select>
                     </div>
@@ -2715,6 +2718,12 @@
                 document.getElementById("p-search").addEventListener("input", e => {
                     paymentSearch = e.target.value;
                     currentPaymentPage = 1;
+                    _refreshPaymentList();
+                });
+
+                document.getElementById("ph-search").addEventListener("input", e => {
+                    historySearch = e.target.value;
+                    currentHistoryPage = 1;
                     _refreshPaymentList();
                 });
 
@@ -2734,6 +2743,11 @@
             const searchEl = document.getElementById("p-search");
             if (searchEl && searchEl.value !== paymentSearch) {
                 searchEl.value = paymentSearch;
+            }
+
+            const histSearchEl = document.getElementById("ph-search");
+            if (histSearchEl && histSearchEl.value !== historySearch) {
+                histSearchEl.value = historySearch;
             }
 
             // Oy tanlovini to'ldirish (har doim joriy holatga moslab)
@@ -2788,8 +2802,15 @@
             }
 
             // Faqat tanlangan oy/yilga tegishli to'lovlar - boshqa oylar bilan aralashmasligi uchun
+            // Qidiruv - o'quvchi o'chirilgan bo'lsa ham student_name_snapshot orqali topiladi
             const monthFilteredPayments = [...payments]
                 .filter(p => p.month === payHistoryMonth && p.year === payHistoryYear)
+                .filter(p => {
+                    if (!historySearch) return true;
+                    const st = students.find(s => s.id === p.student);
+                    const name = st?.name || p.student_name_snapshot || "";
+                    return name.toLowerCase().includes(historySearch.toLowerCase());
+                })
                 .sort((a, b) => b.id - a.id);
 
             const totalHistoryPages = Math.ceil(monthFilteredPayments.length / HISTORY_PER_PAGE) || 1;
@@ -2807,13 +2828,14 @@
                 histEl.innerHTML = historySlice
                     .map(p => {
                         const st = students.find(s => s.id === p.student);
+                        const displayName = st?.name || p.student_name_snapshot || "Noma'lum";
                         let debtText = "To'liq to'langan";
                         if (st && st.debt_amount > 0) {
                             debtText = fmtFull(st.debt_amount) + " so'm qarz";
                         }
                         return `<div class="pay-item" style="flex-wrap:wrap;gap:4px;align-items:flex-start;padding-bottom:10px; height: 80px;">
                     <div class="pay-info" style="flex:1;min-width:140px">
-                        <div class="pay-name">${st?.name || "O'chirilgan"}</div>
+                        <div class="pay-name">${displayName}${!st ? ' <span style="background:rgba(239,68,68,0.12);color:var(--red);padding:1px 8px;border-radius:20px;font-size:11px;font-weight:600;vertical-align:middle">O\'chirilgan</span>' : ''}</div>
                         <div class="pay-date">${p.month} ${p.year} · ${p.date}</div>
                         <div class="pay-sub">
                             <span style="color:${st?.debt_amount > 0 ? 'var(--red)' : 'var(--green)'}">📌 ${debtText}</span>
