@@ -1787,6 +1787,26 @@
         // ===================== API KONFIGURATSIYA =====================
         const API_URL = 'https://web-production-1275f.up.railway.app/api';
 
+        // Har bir API so'roviga avtomatik "Authorization: Bearer <token>" qo'shib beradi.
+        // Bu orqali kod ichida har bir fetch() chaqiruviga alohida token qo'shishni
+        // unutib qo'yish tufayli backendda 400/401 xatoliklar chiqishining oldi olinadi.
+        (function patchFetchWithAuth() {
+            const originalFetch = window.fetch;
+            window.fetch = function (input, init) {
+                const url = typeof input === "string" ? input : (input && input.url) || "";
+                if (url.startsWith(API_URL)) {
+                    init = init || {};
+                    const headers = new Headers(init.headers || (typeof input !== "string" ? input.headers : undefined) || {});
+                    if (!headers.has("Authorization")) {
+                        const token = (typeof getToken === "function") ? getToken() : "";
+                        if (token) headers.set("Authorization", `Bearer ${token}`);
+                    }
+                    init.headers = headers;
+                }
+                return originalFetch(input, init);
+            };
+        })();
+
         // ===================== GLOBAL O'ZGARUVCHILAR =====================
         const MONTHS_UZ = ["Yanvar", "Fevral", "Mart", "Aprel", "May", "Iyun", "Iyul", "Avgust", "Sentyabr", "Oktyabr", "Noyabr", "Dekabr"];
         const MONTHS_SH = ["Yan", "Fev", "Mar", "Apr", "May", "Iyun", "Iyul", "Avg", "Sen", "Okt", "Noy", "Dek"];
