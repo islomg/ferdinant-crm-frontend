@@ -2757,12 +2757,17 @@
             // Qarzdorlik oylik to'lovning to'liq summasi emas, balki shu oyda
             // haqiqatda nechta dars bo'lgani asosida proporsional hisoblanadi:
             // (oylik narx / oydagi jami dars kuni) * shu kungacha o'tgan darslar soni.
-            const lessonsSoFar = countLessonsThisMonth(grp);
-            const totalLessonsInMonth = countTotalLessonsInMonth(grp) || 1;
-            const monthlyPrice = grp?.price ?? s.original_debt ?? 500000;
-            const proRatedFee = Math.round((monthlyPrice / totalLessonsInMonth) * lessonsSoFar);
-            const actualDebt = Math.max(0, proRatedFee - (s.paid_amount || 0));
+            const isFullyPaid = s.payment_status === "paid" || s.debt_amount <= 0;
 
+            let actualDebt = 0;
+            let lessonsSoFar = 0;
+            if (!isFullyPaid) {
+                lessonsSoFar = countLessonsThisMonth(grp);
+                const totalLessonsInMonth = countTotalLessonsInMonth(grp) || 1;
+                const monthlyPrice = grp?.price ?? s.original_debt ?? 500000;
+                const proRatedFee = Math.round((monthlyPrice / totalLessonsInMonth) * lessonsSoFar);
+                actualDebt = Math.max(0, proRatedFee - (s.paid_amount || 0));
+            }
             // Qarzdorligi bor o'quvchini o'chirishdan oldin ishonchnoma so'raladi:
             // shu oy nechta dars o'qigani va (proporsional) qarzdorlik summasi ko'rsatiladi.
             if (actualDebt > 0) {
