@@ -1746,6 +1746,19 @@
         </div>
     </div>
 
+    <!-- O'chirilgan o'quvchini qaytarishda, agar asl guruhi o'chirilgan bo'lsa, boshqa guruh tanlash modali -->
+    <div class="modal-backdrop" id="restore-group-modal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-layer-group"></i> Guruh tanlang</div>
+            <div id="restore-group-message" style="color:var(--text2);font-size:0.9rem;padding:4px 0 12px"></div>
+            <div class="form-group"><label>Yangi guruh</label><select id="rg-group"></select></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('restore-group-modal')">Bekor</button>
+                <button class="btn btn-primary" onclick="confirmRestoreWithGroup()"><i class="fas fa-undo-alt"></i> Qaytarish</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Universal tasdiqlash modali (confirm() o'rniga) -->
     <div class="modal-backdrop" id="confirm-modal">
         <div class="modal-box">
@@ -1858,6 +1871,7 @@
         let viewingStudentId = null;
         let viewingBackTo = 'students';
         let moveStudentId = null;
+        let pendingRestoreTrashId = null;
         let currentPayStudentId = null;
         let chartInstance = null;
         let chartYear = new Date().getFullYear();
@@ -3380,14 +3394,17 @@
     `;
         }
 
-        async function restoreStudent(trashId) {
+        async function restoreStudent(trashId, newGroupId) {
             try {
+                const body = newGroupId ? { new_group_id: newGroupId } : {};
                 const res = await fetch(`${API_URL}/trash/${trashId}/restore/`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
                 });
                 if (res.ok) {
                     toast("O'quvchi muvaffaqiyatli qaytarildi");
+                    closeModal('restore-group-modal');
                     await loadData();
                     return;
                 }
@@ -3396,10 +3413,13 @@
                 try { errData = await res.json(); } catch (e) { /* json bo'lmasa e'tiborsiz */ }
 
                 if (errData && errData.error === 'group_deleted') {
-                    await showConfirm(
-                        errData.message || "Bu o'quvchi tegishli bo'lgan guruh o'chirib yuborilgan. Avval guruhni tiklang yoki o'quvchini boshqa guruhga biriktiring.",
-                        { title: "Guruh topilmadi", okText: "Tushunarli", okClass: "btn-primary" }
-                    );
+                    // Asl guruh o'chirilgan — foydalanuvchiga boshqa guruh tanlash imkoniyatini beramiz
+                    openRestoreGroupModal(trashId, errData.message);
+                    return;
+                }
+
+                if (errData && errData.error === 'invalid_group') {
+                    toast(errData.message || "Tanlangan guruh topilmadi!", "error");
                     return;
                 }
 
@@ -3440,6 +3460,30 @@
                     } else toast("Qaytarishda xatolik! Server ulanishini tekshiring.", "error");
                 }
             }
+        }
+
+        function openRestoreGroupModal(trashId, message) {
+            pendingRestoreTrashId = trashId;
+            document.getElementById("restore-group-message").textContent =
+                message || "Bu o'quvchi tegishli bo'lgan guruh o'chirib yuborilgan. Iltimos, o'quvchini biriktirish uchun boshqa guruh tanlang.";
+            const select = document.getElementById("rg-group");
+            if (groups.length) {
+                select.innerHTML = groups.map(g => `<option value="${g.id}">${g.name}</option>`).join("");
+            } else {
+                select.innerHTML = `<option value="">Guruhlar mavjud emas</option>`;
+            }
+            openModal("restore-group-modal");
+        }
+
+        async function confirmRestoreWithGroup() {
+            const newGid = parseInt(document.getElementById("rg-group").value);
+            if (!newGid) {
+                toast("Iltimos, guruh tanlang!", "error");
+                return;
+            }
+            if (!pendingRestoreTrashId) return;
+            await restoreStudent(pendingRestoreTrashId, newGid);
+            pendingRestoreTrashId = null;
         }
 
         async function clearTrash() {
