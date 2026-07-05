@@ -1870,6 +1870,7 @@
         const fmtFull = n => Number(n).toLocaleString("en-US");
         const now = () => new Date();
         const curMonth = () => MONTHS_UZ[now().getMonth()];
+
         const curYear = () => now().getFullYear();
         const initials = name => name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
         const hashColor = name => COLORS[Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
@@ -2197,11 +2198,11 @@
 
         // ===================== DASHBOARD =====================
         function renderDashboard() {
-            const income = payments.filter(p => p.month === curMonth() && p.year === curYear()).reduce((s, p) => s + p.amount, 0);
+           const income = payments.filter(p => paidMonthUz(p) === curMonth() && paidYear(p) === curYear()).reduce((s, p) => s + p.amount, 0);
             const totalIncome = payments.reduce((s, p) => s + p.amount, 0);
             const totalDebt = students.reduce((s, st) => s + st.debt_amount, 0);
             const debtors = students.filter(s => s.debt_amount > 0).length;
-            const recentPays = payments.filter(p => p.month === curMonth() && p.year === curYear()).sort((a, b) => b.id - a.id).slice(0, 8);
+            const recentPays = payments.filter(p => paidMonthUz(p) === curMonth() && paidYear(p) === curYear()).sort((a, b) => b.id - a.id).slice(0, 8);
 
             document.getElementById("content").innerHTML = `
         <div class="stats-row">
@@ -2229,7 +2230,7 @@
         function buildChart() {
             const ctx = document.getElementById("main-chart");
             if (!ctx) return;
-            const data = MONTHS_UZ.map(m => payments.filter(p => p.month === m && p.year === chartYear).reduce((s, p) => s + p.amount, 0));
+            const data = MONTHS_UZ.map(m => payments.filter(p => paidMonthUz(p) === m && paidYear(p) === chartYear).reduce((s, p) => s + p.amount, 0));
             if (chartInstance) chartInstance.destroy();
             chartInstance = new Chart(ctx, {
                 type: "bar",
