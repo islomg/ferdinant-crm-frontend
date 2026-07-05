@@ -3389,26 +3389,39 @@
                 if (res.ok) {
                     toast("O'quvchi muvaffaqiyatli qaytarildi");
                     await loadData();
-                } else {
-                    const trashItem = trash.find(t => t.trashId === trashId);
-                    if (trashItem) {
-                        const studentData = { ...trashItem };
-                        delete studentData.trashId;
-                        delete studentData.fromGroup;
-                        delete studentData.deleted_at;
-                        const createRes = await fetch(`${API_URL}/students/`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(studentData)
-                        });
-                        if (createRes.ok) {
-                            await fetch(`${API_URL}/trash/${trashId}/`, { method: 'DELETE' });
-                            toast("O'quvchi qaytarildi");
-                            await loadData();
-                        } else toast("Qaytarishda xatolik!", "error");
-                    } else toast("O'quvchi ma'lumoti topilmadi!", "error");
+                    return;
                 }
+
+                let errData = null;
+                try { errData = await res.json(); } catch (e) { /* json bo'lmasa e'tiborsiz */ }
+
+                if (errData && errData.error === 'group_deleted') {
+                    await showConfirm(
+                        errData.message || "Bu o'quvchi tegishli bo'lgan guruh o'chirib yuborilgan. Avval guruhni tiklang yoki o'quvchini boshqa guruhga biriktiring.",
+                        { title: "Guruh topilmadi", okText: "Tushunarli", okClass: "btn-primary" }
+                    );
+                    return;
+                }
+
+                const trashItem = trash.find(t => t.trashId === trashId);
+                if (trashItem) {
+                    const studentData = { ...trashItem };
+                    delete studentData.trashId;
+                    delete studentData.fromGroup;
+                    delete studentData.deleted_at;
+                    const createRes = await fetch(`${API_URL}/students/`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(studentData)
+                    });
+                    if (createRes.ok) {
+                        await fetch(`${API_URL}/trash/${trashId}/`, { method: 'DELETE' });
+                        toast("O'quvchi qaytarildi");
+                        await loadData();
+                    } else toast("Qaytarishda xatolik!", "error");
+                } else toast("O'quvchi ma'lumoti topilmadi!", "error");
             } catch (e) {
+                console.error("Qaytarishda xatolik:", e);
                 const trashItem = trash.find(t => t.trashId === trashId);
                 if (trashItem) {
                     const studentData = { ...trashItem };
