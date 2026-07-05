@@ -52,6 +52,62 @@ function getProfile() {
     };
 }
 
+// ===================== XABAR MODALI (window.alert() o'rniga) =====================
+function ensureAlertModal() {
+    if (document.getElementById('ag-alert-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'ag-alert-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;font-family:\'Geist\',-apple-system,sans-serif;padding:16px;';
+    modal.innerHTML = `
+        <div style="background:rgba(17,24,39,0.97);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;width:92%;max-width:360px;box-shadow:0 25px 60px rgba(0,0,0,0.6);text-align:center;animation:authIn .2s ease;">
+            <div id="ag-alert-icon" style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;"></div>
+            <div id="ag-alert-title" style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:8px;"></div>
+            <div id="ag-alert-message" style="font-size:13px;color:#94a3b8;line-height:1.5;margin-bottom:20px;white-space:pre-line;"></div>
+            <button id="ag-alert-ok" style="width:100%;background:#3b82f6;border-color:#3b82f6;color:#fff;border:none;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Geist',-apple-system,sans-serif;">OK</button>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeAlertModal(); });
+}
+
+function closeAlertModal() {
+    const modal = document.getElementById('ag-alert-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Universal xabar modali: window.alert() o'rniga ishlatiladi.
+// type: "error" | "success" | "info" (default)
+// Promise qaytaradi, foydalanuvchi OK bosgach hal bo'ladi.
+function showAlert(message, type = 'info', title = null) {
+    ensureAlertModal();
+    const modal = document.getElementById('ag-alert-modal');
+    const icon = document.getElementById('ag-alert-icon');
+    const titleEl = document.getElementById('ag-alert-title');
+    const msgEl = document.getElementById('ag-alert-message');
+    const okBtn = document.getElementById('ag-alert-ok');
+
+    const styles = {
+        error: { bg: 'rgba(239,68,68,0.1)', color: '#ef4444', icon: 'fa-circle-exclamation', defTitle: 'Xatolik' },
+        success: { bg: 'rgba(16,185,129,0.1)', color: '#10b981', icon: 'fa-circle-check', defTitle: 'Muvaffaqiyatli' },
+        info: { bg: 'rgba(59,130,246,0.1)', color: '#3b82f6', icon: 'fa-circle-info', defTitle: "Ma'lumot" }
+    };
+    const s = styles[type] || styles.info;
+    icon.style.background = s.bg;
+    icon.style.color = s.color;
+    icon.innerHTML = `<i class="fas ${s.icon}"></i>`;
+    titleEl.textContent = title || s.defTitle;
+    msgEl.textContent = message;
+    okBtn.style.background = s.color;
+    okBtn.style.borderColor = s.color;
+
+    return new Promise((resolve) => {
+        const newOk = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOk, okBtn);
+        newOk.onclick = () => { closeAlertModal(); resolve(); };
+        modal.style.display = 'flex';
+    });
+}
+
 // ===================== API CALL =====================
 async function apiCall(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
@@ -733,9 +789,9 @@ async function addNewUserFromPage() {
     const username = document.getElementById('pf-new-login').value.trim();
     const password = document.getElementById('pf-new-pass2').value;
     const confirm = document.getElementById('pf-new-confirm2').value;
-    if (!username || !password) { alert('Login va parolni kiriting!'); return; }
-    if (password.length < 4) { alert("Parol kamida 4 ta belgi bo'lishi kerak!"); return; }
-    if (password !== confirm) { alert('Parollar mos kelmadi!'); return; }
+    if (!username || !password) { await showAlert('Login va parolni kiriting!', 'error'); return; }
+    if (password.length < 4) { await showAlert("Parol kamida 4 ta belgi bo'lishi kerak!", 'error'); return; }
+    if (password !== confirm) { await showAlert('Parollar mos kelmadi!', 'error'); return; }
     const res = await apiCall('/auth/add-user/', 'POST', { username, password });
     if (res.ok) {
         document.getElementById('pf-new-login').value = '';
@@ -744,7 +800,7 @@ async function addNewUserFromPage() {
         toggleAddUserForm();
         loadUsersListPage();
     } else {
-        alert(res.data.error || 'Xatolik yuz berdi!');
+        await showAlert(res.data.error || 'Xatolik yuz berdi!', 'error');
     }
 }
 
@@ -752,7 +808,7 @@ async function deleteUserFromPage(userId) {
     if (!confirm("Bu foydalanuvchini o'chirasizmi?")) return;
     const res = await apiCall(`/auth/users/${userId}/`, 'DELETE');
     if (res.ok) loadUsersListPage();
-    else alert(res.data.error || 'Xatolik yuz berdi!');
+    else await showAlert(res.data.error || 'Xatolik yuz berdi!', 'error');
 }
 
 // ===================== ASOSIY TEKSHIRISH =====================

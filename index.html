@@ -1759,6 +1759,18 @@
         </div>
     </div>
 
+    <!-- Universal xabar modali (alert() o'rniga) -->
+    <div class="modal-backdrop" id="alert-modal">
+        <div class="modal-box" style="text-align:center">
+            <div id="alert-modal-icon" style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px"></div>
+            <div class="modal-title" id="alert-modal-title" style="justify-content:center"></div>
+            <div id="alert-modal-message" style="white-space:pre-line;color:var(--text2);padding:8px 0 4px;font-size:0.9rem"></div>
+            <div class="modal-actions" style="justify-content:center">
+                <button class="btn" id="alert-modal-ok" style="min-width:120px">OK</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Test natijasi uchun modal (faqat ism so'rash) -->
 
     <div class="modal fade" id="nameModal" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
@@ -1965,6 +1977,43 @@
                 newCancelBtn.onclick = () => finish(false);
 
                 openModal("confirm-modal");
+            });
+        }
+
+        // Universal xabar modali: window.alert() o'rniga ishlatiladi.
+        // Promise qaytaradi (foydalanuvchi OK bosgach hal bo'ladi).
+        // type: "error" | "success" | "info" (default) — ranglar va ikonkani belgilaydi.
+        // Ixtiyoriy options: { title }
+        function showAlert(message, type = "info", options = {}) {
+            const styles = {
+                error: { bg: "rgba(239,68,68,0.12)", color: "var(--red,#ef4444)", icon: "fa-circle-exclamation", title: "Xatolik" },
+                success: { bg: "rgba(16,185,129,0.12)", color: "var(--green,#10b981)", icon: "fa-circle-check", title: "Muvaffaqiyatli" },
+                info: { bg: "rgba(59,130,246,0.12)", color: "var(--accent,#3b82f6)", icon: "fa-circle-info", title: "Ma'lumot" }
+            };
+            const s = styles[type] || styles.info;
+            const { title = s.title } = options;
+
+            return new Promise((resolve) => {
+                const iconEl = document.getElementById("alert-modal-icon");
+                iconEl.style.background = s.bg;
+                iconEl.style.color = s.color;
+                iconEl.innerHTML = `<i class="fas ${s.icon}"></i>`;
+                document.getElementById("alert-modal-title").textContent = title;
+                document.getElementById("alert-modal-message").textContent = message;
+
+                const okBtn = document.getElementById("alert-modal-ok");
+                // Eski listenerni olib tashlash uchun tugmani klonlaymiz.
+                const newOkBtn = okBtn.cloneNode(true);
+                okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+                newOkBtn.style.background = s.color;
+                newOkBtn.style.borderColor = s.color;
+
+                newOkBtn.onclick = () => {
+                    closeModal("alert-modal");
+                    resolve();
+                };
+
+                openModal("alert-modal");
             });
         }
 
@@ -3932,7 +3981,7 @@
                     statusDiv.style.color = "#ffbc9e";
                     statusDiv.className = "error";
                     statusDiv.style.display = "block";
-                    alert("Iltimos, barcha maydonlarni to'ldiring.");
+                    await showAlert("Iltimos, barcha maydonlarni to'ldiring.", "error");
                     return;
                 }
 
@@ -3985,13 +4034,13 @@
                     statusDiv.innerText = finalMsg;
                     statusDiv.style.color = "#c3ffcf";
                     statusDiv.className = "success";
-                    alert(finalMsg);
+                    await showAlert(finalMsg, "success");
                 } catch (error) {
                     console.error("Certificate generation error:", error);
                     statusDiv.innerText = "❌ Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.";
                     statusDiv.style.color = "#ffa4a4";
                     statusDiv.className = "error";
-                    alert("Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.");
+                    await showAlert("Xatolik yuz berdi. Iltimos, qayta urinib ko'ring.", "error");
                 }
             });
         }
