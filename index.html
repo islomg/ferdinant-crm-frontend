@@ -1870,8 +1870,19 @@
         const fmtFull = n => Number(n).toLocaleString("en-US");
         const now = () => new Date();
         const curMonth = () => MONTHS_UZ[now().getMonth()];
-
         const curYear = () => now().getFullYear();
+
+        // p.month / p.year — to'lov QAYSI OY QARZIGA tegishli ekanini
+        // belgilaydigan (qo'lda tanlangan) yorliq, tushum HISOBI uchun emas.
+        // Tushum har doim to'lov HAQIQATDA qilingan sanaga (p.date) qarab
+        // hisoblanishi kerak.
+        function paidMonthUz(p) {
+            const d = new Date(p.date);
+            return MONTHS_UZ[d.getMonth()];
+        }
+        function paidYear(p) {
+            return new Date(p.date).getFullYear();
+        }
         const initials = name => name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
         const hashColor = name => COLORS[Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
 
@@ -2198,7 +2209,7 @@
 
         // ===================== DASHBOARD =====================
         function renderDashboard() {
-           const income = payments.filter(p => paidMonthUz(p) === curMonth() && paidYear(p) === curYear()).reduce((s, p) => s + p.amount, 0);
+            const income = payments.filter(p => paidMonthUz(p) === curMonth() && paidYear(p) === curYear()).reduce((s, p) => s + p.amount, 0);
             const totalIncome = payments.reduce((s, p) => s + p.amount, 0);
             const totalDebt = students.reduce((s, st) => s + st.debt_amount, 0);
             const debtors = students.filter(s => s.debt_amount > 0).length;
