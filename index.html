@@ -2757,28 +2757,6 @@
             render();
         }
 
-        // Guruh kunlari kodiga (DCHJ / SPSH / Har kuni) qarab, shu oy boshidan
-        // bugungi kungacha nechta dars kuni o'tganini hisoblaydi.
-        function countLessonsThisMonth(group) {
-            if (!group) return 0;
-            let activeDays;
-            if (group.days === "Har kuni") {
-                activeDays = [0, 1, 2, 3, 4, 5, 6];
-            } else if (group.days === "SPSH") {
-                activeDays = [2, 4, 6]; // Seshanba, Payshanba, Shanba
-            } else {
-                activeDays = [1, 3, 5]; // DCHJ: Dushanba, Chorshanba, Juma (standart)
-            }
-            const now = new Date();
-            const year = now.getFullYear();
-            const month = now.getMonth();
-            let count = 0;
-            for (let d = 1; d <= now.getDate(); d++) {
-                if (activeDays.includes(new Date(year, month, d).getDay())) count++;
-            }
-            return count;
-        }
-
         // Guruh kunlari kodiga (DCHJ / SPSH / Har kuni) qarab, berilgan kunlar oralig'ida
         // nechta dars kuni borligini hisoblaydi. Yakshanba hech qaysi jadvalga kirmaydi.
         function countLessonDaysInRange(group, year, month, fromDay, toDay) {
@@ -2797,10 +2775,19 @@
             return count;
         }
 
-        // Oy boshidan bugungi kungacha nechta dars o'tganini hisoblaydi.
-        function countLessonsThisMonth(group) {
+        // O'quvchi qo'shilgan kundan (agar shu oyda qo'shilgan bo'lsa) yoki oy
+        // boshidan (agar oldingi oylarda qo'shilgan bo'lsa) bugungi kungacha
+        // nechta dars o'tganini hisoblaydi.
+        function countLessonsThisMonth(group, joinedAt) {
             const now = new Date();
-            return countLessonDaysInRange(group, now.getFullYear(), now.getMonth(), 1, now.getDate());
+            let fromDay = 1;
+            if (joinedAt) {
+                const joined = new Date(joinedAt);
+                if (!isNaN(joined) && joined.getFullYear() === now.getFullYear() && joined.getMonth() === now.getMonth()) {
+                    fromDay = joined.getDate();
+                }
+            }
+            return countLessonDaysInRange(group, now.getFullYear(), now.getMonth(), fromDay, now.getDate());
         }
 
         // Shu oyning boshidan oxirigacha jami nechta dars kuni bo'lishini hisoblaydi.
@@ -2818,12 +2805,14 @@
             // Qarzdorlik oylik to'lovning to'liq summasi emas, balki shu oyda
             // haqiqatda nechta dars bo'lgani asosida proporsional hisoblanadi:
             // (oylik narx / oydagi jami dars kuni) * shu kungacha o'tgan darslar soni.
+            // O'quvchi shu oyning o'rtasida qo'shilgan bo'lsa, hisob oy boshidan emas,
+            // aynan o'sha qo'shilgan kunidan boshlanadi (s.created_at asosida).
             const isFullyPaid = s.payment_status === "paid" || s.debt_amount <= 0;
 
             let actualDebt = 0;
             let lessonsSoFar = 0;
             if (!isFullyPaid) {
-                lessonsSoFar = countLessonsThisMonth(grp);
+                lessonsSoFar = countLessonsThisMonth(grp, s.created_at);
                 const totalLessonsInMonth = countTotalLessonsInMonth(grp) || 1;
                 const monthlyPrice = grp?.price ?? s.original_debt ?? 500000;
                 const proRatedFee = Math.round((monthlyPrice / totalLessonsInMonth) * lessonsSoFar);
