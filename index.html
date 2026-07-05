@@ -3131,6 +3131,10 @@
                     debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
                     payment_status: paymentStatus
                 };
+                // period serverda hozirgina to'g'irlangan bo'lishi mumkin —
+                // eski (stale) qiymatni qayta yozib, ensure_monthly_reset()ni
+                // chalkashtirmasligi uchun bu maydonni jo'natmaymiz.
+                delete updateData.period;
 
                 await fetch(`${API_URL}/students/${currentPayStudentId}/`, {
                     method: 'PUT',
@@ -3189,6 +3193,7 @@
                     debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
                     payment_status: paymentStatus
                 };
+                delete updateData.period;
 
                 const stuRes = await fetch(`${API_URL}/students/${student.id}/`, {
                     method: 'PUT',
@@ -3242,6 +3247,7 @@
                     debt_amount: newDebtAmount > 0 ? newDebtAmount : 0,
                     payment_status: paymentStatus
                 };
+                delete updateData.period;
 
                 await fetch(`${API_URL}/students/${student.id}/`, {
                     method: 'PUT',
