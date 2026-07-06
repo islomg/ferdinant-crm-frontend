@@ -3829,6 +3829,13 @@
             pendingScore = testUserScore;
             pendingTotal = testQuestions.length;
 
+            // YANGI: tugmani oldingi holatidan tozalash
+            const confirmBtn = document.getElementById("confirmNameBtn");
+            if (confirmBtn) {
+                confirmBtn.disabled = false;
+                confirmBtn.innerHTML = '<i class="fas fa-paper-plane me-1"></i> Yuborish';
+            }
+
             const modalElement = document.getElementById('nameModal');
             nameModalInstance = new bootstrap.Modal(modalElement, { backdrop: 'static', keyboard: false });
             document.getElementById("userNameInput").value = "";
