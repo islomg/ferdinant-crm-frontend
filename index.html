@@ -1849,15 +1849,10 @@
                         </div>
                     </div>
                     <div class="form-group mb-0">
-                        <label style="color:var(--text2)">Savol-javoblar (JSON)</label>
-                        <textarea class="form-control" id="newTestJson" rows="10" style="font-family:monospace;font-size:0.85rem" placeholder='[
-              {
-                "question": "2+2 nechiga teng?",
-                "answer": "4",
-                "options": ["3", "4", "5"]
-              }
-            ]'></textarea>
-                                    <small class="text-muted mt-2 d-block" style="color:var(--text3) !important;">Har bir savolda "question", "answer" va "options" (javob variantlari, ichida "answer" albatta bo'lishi shart) bo'lishi kerak.</small>
+                        <label style="color:var(--text2)">Savol va javoblar</label>
+                        <div id="newTestQuestionsContainer" style="max-height:360px;overflow-y:auto;padding-right:4px"></div>
+                        <button type="button" class="btn btn-ghost btn-sm mt-2" onclick="newTestAddQuestion()"><i class="fas fa-plus"></i> Savol qo'shish</button>
+                        <small class="text-muted mt-2 d-block" style="color:var(--text3) !important;">Har bir savol uchun kamida 2 ta variant kiriting va radio tugma orqali to'g'ri javobni belgilang.</small>
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -3701,6 +3696,7 @@
 
         let testsList = loadTests();
         let activeTest = null;
+        let testSearch = "";
 
         function prepareQuestions(questions) {
             return questions.map(q => ({
@@ -3917,14 +3913,28 @@
 
         // ===================== TESTLAR RO'YXATI (BOSH SAHIFA) =====================
         function renderTests() {
-            document.getElementById("content").innerHTML = `
+            const content = document.getElementById("content");
+            if (!document.getElementById("testsContent")) {
+                content.innerHTML = `
     <div class="tests-wrapper">
-        <div class="tests-header" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">
-            <h2 style="color:var(--text1);margin:0;display:flex;align-items:center;gap:10px"><i class="fas fa-flask"></i> Testlar</h2>
+        <div class="filter-bar">
+            <input id="t-search" placeholder="🔍 Test nomi bo'yicha izlash..." style="flex:1">
             <button class="btn btn-primary" onclick="openAddTestModal()"><i class="fas fa-plus"></i> Test qo'shish</button>
         </div>
         <div id="testsContent"></div>
     </div>`;
+
+                document.getElementById("t-search").addEventListener("input", e => {
+                    testSearch = e.target.value;
+                    renderTestsGrid();
+                });
+            }
+
+            const searchEl = document.getElementById("t-search");
+            if (searchEl && searchEl.value !== testSearch) {
+                searchEl.value = testSearch;
+            }
+
             activeTest = null;
             renderTestsGrid();
         }
@@ -3932,12 +3942,17 @@
         function renderTestsGrid() {
             const container = document.getElementById("testsContent");
             if (!container) return;
+            const filtered = testsList.filter(t => t.name.toLowerCase().includes(testSearch.toLowerCase()));
             if (!testsList.length) {
                 container.innerHTML = `<div class="empty"><i class="fas fa-flask fa-3x" style="color:var(--accent2)"></i><h3>Testlar yo'q</h3><p>Yuqoridagi "Test qo'shish" tugmasi orqali birinchi testni qo'shing</p></div>`;
                 return;
             }
+            if (!filtered.length) {
+                container.innerHTML = `<div class="empty"><i class="fas fa-magnifying-glass fa-3x" style="color:var(--accent2)"></i><h3>Test topilmadi</h3><p>Qidiruv bo'yicha hech qanday test topilmadi</p></div>`;
+                return;
+            }
             container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
-                ${testsList.map(t => `
+                ${filtered.map(t => `
                     <div class="test-select-card" onclick="openTestStart('${t.id}')" style="cursor:pointer;background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:14px;padding:22px 18px;text-align:center;transition:.2s">
                         <i class="fas fa-flask fa-2x" style="color:#38BDF8;margin-bottom:10px"></i>
                         <h4 style="color:var(--text1);margin:8px 0 4px;word-break:break-word">${t.name}</h4>
@@ -4078,12 +4093,100 @@
         }
 
         // ===================== YANGI TEST QO'SHISH =====================
+        let newTestQuestions = [];
+
+        function escapeHtml(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function newTestBlankQuestion() {
+            return { question: "", options: ["", ""], correct: 0 };
+        }
+
+        function renderNewTestQuestions() {
+            const container = document.getElementById("newTestQuestionsContainer");
+            if (!container) return;
+            container.innerHTML = newTestQuestions.map((q, qi) => `
+                <div class="test-q-block" style="background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:12px;padding:14px;margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+                        <strong style="color:var(--text2)">Savol ${qi + 1}</strong>
+                        ${newTestQuestions.length > 1 ? `<button type="button" class="btn btn-danger btn-sm" data-remove-q="${qi}" title="Savolni o'chirish"><i class="fas fa-trash"></i></button>` : ""}
+                    </div>
+                    <input type="text" class="form-control mb-2" data-q-text="${qi}" placeholder="Savol matnini kiriting" value="${escapeHtml(q.question)}">
+                    <div data-options-wrap="${qi}">
+                        ${q.options.map((opt, oi) => `
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                <input type="radio" name="correct-${qi}" data-correct-radio="${qi}" data-oi="${oi}" ${q.correct === oi ? "checked" : ""} title="To'g'ri javob sifatida belgilash">
+                                <input type="text" class="form-control" data-opt-text="${qi}" data-oi-text="${oi}" placeholder="Variant ${oi + 1}" value="${escapeHtml(opt)}" style="flex:1">
+                                ${q.options.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" data-remove-opt="${qi}" data-oi-remove="${oi}" title="Variantni o'chirish"><i class="fas fa-times"></i></button>` : ""}
+                            </div>
+                        `).join("")}
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" data-add-opt="${qi}"><i class="fas fa-plus"></i> Variant qo'shish</button>
+                </div>
+            `).join("");
+
+            container.querySelectorAll("[data-q-text]").forEach(el => {
+                el.addEventListener("input", e => {
+                    newTestQuestions[parseInt(el.getAttribute("data-q-text"))].question = e.target.value;
+                });
+            });
+            container.querySelectorAll("[data-opt-text]").forEach(el => {
+                el.addEventListener("input", e => {
+                    const qi = parseInt(el.getAttribute("data-opt-text"));
+                    const oi = parseInt(el.getAttribute("data-oi-text"));
+                    newTestQuestions[qi].options[oi] = e.target.value;
+                });
+            });
+            container.querySelectorAll("[data-correct-radio]").forEach(el => {
+                el.addEventListener("change", () => {
+                    const qi = parseInt(el.getAttribute("data-correct-radio"));
+                    const oi = parseInt(el.getAttribute("data-oi"));
+                    newTestQuestions[qi].correct = oi;
+                });
+            });
+            container.querySelectorAll("[data-remove-q]").forEach(el => {
+                el.addEventListener("click", () => {
+                    newTestQuestions.splice(parseInt(el.getAttribute("data-remove-q")), 1);
+                    renderNewTestQuestions();
+                });
+            });
+            container.querySelectorAll("[data-add-opt]").forEach(el => {
+                el.addEventListener("click", () => {
+                    newTestQuestions[parseInt(el.getAttribute("data-add-opt"))].options.push("");
+                    renderNewTestQuestions();
+                });
+            });
+            container.querySelectorAll("[data-remove-opt]").forEach(el => {
+                el.addEventListener("click", () => {
+                    const qi = parseInt(el.getAttribute("data-remove-opt"));
+                    const oi = parseInt(el.getAttribute("data-oi-remove"));
+                    const q = newTestQuestions[qi];
+                    q.options.splice(oi, 1);
+                    if (q.correct >= q.options.length) q.correct = q.options.length - 1;
+                    else if (q.correct > oi) q.correct -= 1;
+                    renderNewTestQuestions();
+                });
+            });
+        }
+
+        function newTestAddQuestion() {
+            newTestQuestions.push(newTestBlankQuestion());
+            renderNewTestQuestions();
+        }
+
         function openAddTestModal() {
             document.getElementById("newTestName").value = "";
             document.getElementById("newTestTime").value = 30;
             document.getElementById("newTestMaxWrong").value = 3;
             document.getElementById("newTestPassScore").value = "";
-            document.getElementById("newTestJson").value = "";
+            newTestQuestions = [newTestBlankQuestion()];
+            renderNewTestQuestions();
             const modalElement = document.getElementById('addTestModal');
             const modalInstance = new bootstrap.Modal(modalElement);
             modalInstance.show();
@@ -4094,27 +4197,29 @@
             const timeSec = parseInt(document.getElementById("newTestTime").value) || 30;
             const maxWrong = parseInt(document.getElementById("newTestMaxWrong").value) || 3;
             let passScore = parseInt(document.getElementById("newTestPassScore").value);
-            const jsonRaw = document.getElementById("newTestJson").value.trim();
 
             if (!name) { toast("Test nomini kiriting", "error"); return; }
-            if (!jsonRaw) { toast("Savol-javoblarni JSON formatida kiriting", "error"); return; }
+            if (!newTestQuestions.length) { toast("Kamida 1 ta savol qo'shing", "error"); return; }
 
             let questions;
             try {
-                questions = JSON.parse(jsonRaw);
-                if (!Array.isArray(questions) || questions.length === 0) {
-                    throw new Error("Kamida 1 ta savol bo'lishi kerak");
-                }
-                questions.forEach((q, i) => {
-                    if (!q.question || !q.answer || !Array.isArray(q.options) || q.options.length < 2) {
-                        throw new Error(`${i + 1}-savolda "question", "answer" yoki "options" to'liq emas`);
+                questions = newTestQuestions.map((q, i) => {
+                    const questionText = (q.question || "").trim();
+                    const options = q.options.map(o => (o || "").trim()).filter(o => o.length > 0);
+                    if (!questionText) {
+                        throw new Error(`${i + 1}-savol matni kiritilmagan`);
                     }
-                    if (!q.options.includes(q.answer)) {
-                        throw new Error(`${i + 1}-savolda "answer" qiymati "options" ichida yo'q`);
+                    if (options.length < 2) {
+                        throw new Error(`${i + 1}-savolda kamida 2 ta variant bo'lishi kerak`);
                     }
+                    const answer = (q.options[q.correct] || "").trim();
+                    if (!answer || !options.includes(answer)) {
+                        throw new Error(`${i + 1}-savolda to'g'ri javobni belgilang`);
+                    }
+                    return { question: questionText, answer, options };
                 });
             } catch (e) {
-                toast("JSON formatida xatolik: " + e.message, "error");
+                toast(e.message, "error");
                 return;
             }
 
