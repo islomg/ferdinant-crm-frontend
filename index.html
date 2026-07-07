@@ -4013,13 +4013,24 @@
             }
             container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
                 ${filtered.map(t => `
-                    <div class="test-select-card" onclick="openTestStart('${t.id}')" style="cursor:pointer;background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:14px;padding:22px 18px;text-align:center;transition:.2s">
+                    <div class="test-select-card" onclick="openTestStart('${t.id}')" style="cursor:pointer;position:relative;background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:14px;padding:22px 18px;text-align:center;transition:.2s">
+                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTest('${t.id}')" title="Testni o'chirish" style="position:absolute;top:8px;right:8px;padding:4px 8px"><i class="fas fa-trash"></i></button>
                         <i class="fas fa-flask fa-2x" style="color:#38BDF8;margin-bottom:10px"></i>
                         <h4 style="color:var(--text1);margin:8px 0 4px;word-break:break-word">${escapeHtml(t.name)}</h4>
                         <small style="color:var(--text3)">${t.questions.length} ta savol</small>
                     </div>
                 `).join("")}
             </div>`;
+        }
+
+        // Testni ro'yxatdan va localStorage'dan o'chirish
+        function deleteTest(id) {
+            const test = testsList.find(t => t.id === id);
+            if (!test) return;
+            if (!confirm(`"${test.name}" testini o'chirmoqchimisiz?`)) return;
+            testsList = testsList.filter(t => t.id !== id);
+            saveTests();
+            renderTestsGrid();
         }
 
         function openTestStart(id) {
