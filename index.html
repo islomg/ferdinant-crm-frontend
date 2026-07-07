@@ -3149,7 +3149,7 @@
                 .reduce((sum, p) => sum + p.amount, 0);
 
             const titleEl = document.getElementById("pay-history-title");
-            if (titleEl) titleEl.textContent = `To'lovlar tarixi (${payHistoryMonth} ${payHistoryYear} — ${fmt(monthTotalIncome)} so'm) — ${monthFilteredPayments.length}`;
+            if (titleEl) titleEl.textContent = `To'lovlar tarixi — ${monthFilteredPayments.length}`;
 
             const histEl = document.getElementById("pay-history-list");
             if (histEl) {
