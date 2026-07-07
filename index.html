@@ -1825,6 +1825,35 @@
         </div>
     </div>
 
+    <!-- Qarzdorlarga Telegram orqali ogohlantirish yuborish turi tanlash modali -->
+    <div class="modal-backdrop" id="telegram-warn-modal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fab fa-telegram"></i> Qarzdorlarni ogohlantirish</div>
+            <div style="color:var(--text2);font-size:0.9rem;padding:4px 0 14px">
+                Ogohlantirish xabari Telegram guruhiga yuboriladi. Yuborish turini tanlang:
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+                <button class="btn btn-ghost" style="justify-content:flex-start;text-align:left;padding:14px 16px"
+                    onclick="sendTelegramDebtWarning('summary')">
+                    <i class="fas fa-list"></i>&nbsp; <b>Hammaga bitta ogohlantirish</b>
+                    <div style="font-weight:400;font-size:0.82rem;color:var(--text2);margin-top:4px">
+                        Barcha qarzdorlar ro'yxati bitta umumiy xabar sifatida yuboriladi
+                    </div>
+                </button>
+                <button class="btn btn-ghost" style="justify-content:flex-start;text-align:left;padding:14px 16px"
+                    onclick="sendTelegramDebtWarning('individual')">
+                    <i class="fas fa-user-friends"></i>&nbsp; <b>Har biriga alohida ogohlantirish</b>
+                    <div style="font-weight:400;font-size:0.82rem;color:var(--text2);margin-top:4px">
+                        Har bir qarzdor o'quvchi uchun alohida xabar yuboriladi
+                    </div>
+                </button>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('telegram-warn-modal')">Bekor</button>
+            </div>
+        </div>
+    </div>
+
     <!-- O'chirilgan o'quvchini qaytarishda, agar asl guruhi o'chirilgan bo'lsa, boshqa guruh tanlash modali -->
     <div class="modal-backdrop" id="restore-group-modal">
         <div class="modal-box">
@@ -3052,6 +3081,9 @@
                 content.innerHTML = `
             <div class="filter-bar">
                 <input id="d-search" placeholder="🔍 Ism bo'yicha izlash..." style="flex:1">
+                <button class="btn btn-primary" onclick="openModal('telegram-warn-modal')">
+                    <i class="fab fa-telegram"></i> Ogohlantirish yuborish
+                </button>
             </div>
             <div class="chart-box" style="margin-bottom:16px">
                 <div class="stat-lbl" style="margin-bottom:6px">Jami qarzdorlik</div>
@@ -3101,6 +3133,48 @@
             }
             const pagEl = document.getElementById("debtors-pagination");
             if (pagEl) pagEl.innerHTML = total > 1 ? pages : "";
+        }
+
+        // Qarzdorlar bo'limidagi "Ogohlantirish yuborish" tugmasi bosilib,
+        // tur tanlangandan so'ng chaqiriladi. Backend darhol Telegram guruhiga
+        // (umumiy chat) xabar yuboradi — bu avtomatik oylik eslatmadan
+        // mustaqil, admin xohlagan vaqtda bosishi mumkin.
+        let telegramWarnSending = false;
+        async function sendTelegramDebtWarning(mode) {
+            if (telegramWarnSending) return;
+
+            const debtorsCount = students.filter(s => s.debt_amount > 0).length;
+            if (debtorsCount === 0) {
+                closeModal('telegram-warn-modal');
+                return toast("Hozircha qarzdorlar yo'q", "error");
+            }
+
+            const label = mode === 'summary' ? 'umumiy ro\'yxat' : `${debtorsCount} ta alohida xabar`;
+            const confirmed = await showConfirm(
+                `Telegram guruhiga ${label} yuborilsinmi?`,
+                { title: "Ogohlantirish yuborish", okText: "Yuborish", okClass: "btn-primary" }
+            );
+            if (!confirmed) return;
+
+            telegramWarnSending = true;
+            try {
+                const res = await fetch(`${API_URL}/telegram/send-debt-warning/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (res.ok) {
+                    closeModal('telegram-warn-modal');
+                    toast(`✅ Yuborildi (${data.sent ?? debtorsCount} ta o'quvchi)`);
+                } else {
+                    toast(data.error || "Yuborishda xato yuz berdi", "error");
+                }
+            } catch (err) {
+                toast("Tarmoq xatosi — qayta urinib ko'ring", "error");
+            } finally {
+                telegramWarnSending = false;
+            }
         }
 
         // ===================== PAYMENTS =====================
