@@ -4025,7 +4025,16 @@
         function openTestStart(id) {
             activeTest = testsList.find(t => t.id === id);
             if (!activeTest) return;
+            const filterBar = document.querySelector(".tests-wrapper .filter-bar");
+            if (filterBar) filterBar.style.display = "none";
             renderTestQuizFlow();
+        }
+
+        // Testni yopib, barcha testlar ro'yxatiga qaytish (qidiruv panelini tiklaydi)
+        function backToTestsList() {
+            testClearTimers();
+            activeTest = null;
+            renderTests();
         }
 
         // ===================== YANGI TEST QO'SHISH =====================
@@ -4176,6 +4185,9 @@
             const container = document.getElementById("testsContent");
             if (!container) return;
             container.innerHTML = `
+    <div style="display:flex;justify-content:flex-start;margin-bottom:16px">
+        <button class="btn btn-ghost btn-sm" onclick="backToTestsList()"><i class="fas fa-arrow-left"></i> Barcha testlar</button>
+    </div>
     <div style="display:flex;justify-content:center">
         <div class="test-container" style="max-width:700px;width:100%">
             <div id="testStartPanel" style="display:flex;justify-content:center;align-items:center;min-height:50vh">
