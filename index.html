@@ -1736,6 +1736,7 @@
             <div class="form-group"><label>Guruh nomi *</label><input id="m-gname"
                     placeholder="masalan: Matematika Asosiy">
             </div>
+            <div class="form-group"><label>Egasi (Foydalanuvchi)</label><select id="m-guser"></select></div>
             <div class="form-group"><label>Dars vaqti</label><input id="m-gtime" type="time" value="15:00"></div>
             <div class="form-group"><label>Kunlar</label><select id="m-gdays">
                     <option>DCHJ</option>
@@ -1763,6 +1764,7 @@
             <div class="modal-title"><i class="fas fa-user-graduate"></i> <span id="student-modal-title">Yangi
                     o'quvchi</span></div>
             <div class="form-group"><label>Ism familiya *</label><input id="m-sname" placeholder="To'liq ism"></div>
+            <div class="form-group"><label>Egasi (Foydalanuvchi)</label><select id="m-suser" onchange="refreshGroupSelectForOwner()"></select></div>
             <div class="form-group"><label>Guruh</label><select id="m-sgroup"></select></div>
             <div class="form-group"><label>Oylik to'lov (so'm)</label><input id="m-sdebt" type="text"
                     class="money-input">
@@ -1956,6 +1958,7 @@
         let payments = [];
         let trash = [];
         let nextPId = 1;
+        let crmUsersList = []; // Tizimdagi barcha login qilingan foydalanuvchilar (guruh/o'quvchi egasi tanlash uchun)
 
         let currentPage = "dashboard";
         let currentStudentPage = 1;
@@ -2169,6 +2172,8 @@
                 groups = await groupsRes.json();
                 students = await studentsRes.json();
                 payments = await paymentsRes.json();
+
+                await loadCrmUsersList();
 
                 const trashData = await trashRes.json();
 
@@ -2511,6 +2516,55 @@
 
         document.addEventListener("click", closeAllDropdowns);
 
+        // ===================== FOYDALANUVCHI (EGASI) TANLASH =====================
+        // Tizimdagi barcha login qilingan foydalanuvchilarni yuklaydi — guruh/o'quvchi
+        // qo'shishda "Egasi" dropdownini to'ldirish uchun ishlatiladi.
+        async function loadCrmUsersList() {
+            try {
+                const res = await apiCall('/auth/users/');
+                if (res.ok) crmUsersList = res.data;
+            } catch (e) {
+                console.error("Foydalanuvchilar ro'yxatini yuklashda xatolik:", e);
+            }
+        }
+
+        // Berilgan select elementini barcha foydalanuvchilar bilan to'ldiradi.
+        // selectedId berilmasa — joriy login qilingan foydalanuvchi default tanlanadi.
+        function populateUserSelect(selectId, selectedId = null) {
+            const sel = document.getElementById(selectId);
+            if (!sel) return;
+            const currentUserData = (typeof getCurrentUserData === "function") ? getCurrentUserData() : null;
+            const defaultId = selectedId != null ? selectedId : (currentUserData ? currentUserData.id : null);
+            sel.innerHTML = crmUsersList.map(u =>
+                `<option value="${u.id}" ${u.id === defaultId ? "selected" : ""}>${u.name || u.username}</option>`
+            ).join("");
+        }
+
+        // O'quvchi qo'shish oynasida "Egasi" tanlanganda, Guruh dropdowni
+        // shu foydalanuvchining guruhlari bilan qayta to'ldiriladi.
+        async function refreshGroupSelectForOwner(selectedGroupId = null) {
+            const ownerSel = document.getElementById("m-suser");
+            const ownerId = parseInt(ownerSel?.value) || null;
+            const currentUserData = (typeof getCurrentUserData === "function") ? getCurrentUserData() : null;
+
+            let ownerGroups = groups;
+            if (ownerId && currentUserData && ownerId !== currentUserData.id) {
+                try {
+                    const res = await fetch(`${API_URL}/groups/?owner_id=${ownerId}`, {
+                        headers: { "Authorization": `Bearer ${getToken()}` }
+                    });
+                    ownerGroups = res.ok ? await res.json() : [];
+                } catch (e) {
+                    ownerGroups = [];
+                }
+            }
+
+            const grpSel = document.getElementById("m-sgroup");
+            if (!grpSel) return;
+            grpSel.innerHTML = `<option value="">— Guruh tanlanmagan —</option>` +
+                ownerGroups.map(g => `<option value="${g.id}" ${selectedGroupId === g.id ? "selected" : ""}>${g.name}</option>`).join("");
+        }
+
         function openGroupModal(id = null) {
             editGroupId = id;
             const g = id ? groups.find(gr => gr.id === id) : null;
@@ -2522,6 +2576,7 @@
             document.getElementById("m-gteacher").value = g?.teacher || "";
             document.getElementById("m-gmax").value = g?.max_students || 17;
             setMoneyVal("m-gprice", g?.price || 500000);
+            populateUserSelect("m-guser", g?.user ?? null);
             openModal("group-modal");
         }
 
@@ -2535,6 +2590,8 @@
             const maxStudents =
                 parseInt(document.getElementById("m-gmax").value) || 17;
 
+            const ownerId = parseInt(document.getElementById("m-guser").value) || null;
+
             const data = {
                 name,
                 time: document.getElementById("m-gtime").value,
@@ -2544,7 +2601,8 @@
                 teacher:
                     document.getElementById("m-gteacher").value.trim() || "—",
                 price: getMoneyVal("m-gprice"),
-                max_students: maxStudents
+                max_students: maxStudents,
+                user: ownerId
             };
 
             const headers = {
@@ -2812,14 +2870,24 @@
     </div>`;
         }
 
-        function openStudentModal(id = null, preGroupId = null) {
+        async function openStudentModal(id = null, preGroupId = null) {
             editStudentId = id;
             const s = id ? students.find(st => st.id === id) : null;
             document.getElementById("student-modal-title").textContent = s ? "O'quvchini tahrirlash" : "Yangi o'quvchi";
             document.getElementById("m-sname").value = s?.name || "";
             setMoneyVal("m-sdebt", s?.original_debt || 500000);
-            const grpSel = document.getElementById("m-sgroup");
-            grpSel.innerHTML = `<option value="">— Guruh tanlanmagan —</option>` + groups.map(g => `<option value="${g.id}" ${(s && s.group === g.id) || preGroupId === g.id ? "selected" : ""}>${g.name}</option>`).join("");
+
+            // Tahrirlashda o'quvchining guruhi qaysi foydalanuvchiga tegishli bo'lsa,
+            // "Egasi" dropdowni o'shani ko'rsatadi. Yangi o'quvchida — joriy login qilgan foydalanuvchi.
+            let ownerId = null;
+            const targetGroupId = s ? s.group : preGroupId;
+            if (targetGroupId) {
+                const grp = groups.find(g => g.id === targetGroupId);
+                if (grp) ownerId = grp.user;
+            }
+            populateUserSelect("m-suser", ownerId);
+            await refreshGroupSelectForOwner(targetGroupId ?? null);
+
             openModal("student-modal");
         }
 
