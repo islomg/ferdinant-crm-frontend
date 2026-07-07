@@ -1278,6 +1278,51 @@
             }
         }
 
+        /* ===================== TO'LOVLAR TARIXI - MOBIL ===================== */
+        @media (max-width: 768px) {
+            .ph-header-row {
+                flex-direction: column;
+                align-items: stretch !important;
+                gap: 6px !important;
+            }
+
+            #pay-history-title {
+                font-size: 13px !important;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .ph-controls-row {
+                flex-wrap: nowrap !important;
+                gap: 6px !important;
+                width: 100%;
+            }
+
+            #ph-search {
+                min-width: 0 !important;
+                flex: 1 1 auto;
+                font-size: 12px !important;
+                padding: 6px 8px !important;
+            }
+
+            #ph-month,
+            #ph-year {
+                min-width: 0 !important;
+                flex: 0 1 auto;
+                font-size: 11px !important;
+                padding: 6px 4px !important;
+            }
+
+            #ph-month {
+                width: 78px;
+            }
+
+            #ph-year {
+                width: 62px;
+            }
+        }
+
         /* Test panel stillari */
         .test-container,
         .cert-container {
@@ -2962,13 +3007,13 @@
             <div id="pay-students-list"></div>
             <div id="pay-students-pagination" class="pagination" style="margin-bottom:16px"></div>
             <div class="chart-box">
-                <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
-                    <div id="pay-history-title" class="section-title" style="margin:0">To'lovlar tarixi</div>
-                    <div style="display:flex;gap:8px;flex-wrap:wrap">
-                        <input id="ph-search" placeholder="🔍 O'quvchi izlash..." style="min-width:160px">
-                        <select id="ph-month" style="min-width:110px"></select>
-                        <select id="ph-year" style="min-width:90px"></select>
-                    </div>
+                <div class="ph-header-row" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+                <div id="pay-history-title" class="section-title" style="margin:0">To'lovlar tarixi</div>
+                <div class="ph-controls-row" style="display:flex;gap:8px;flex-wrap:wrap">
+                    <input id="ph-search" placeholder="🔍 O'quvchi izlash..." style="min-width:160px">
+                    <select id="ph-month" style="min-width:110px"></select>
+                    <select id="ph-year" style="min-width:90px"></select>
+                </div>
                 </div>
                 <div id="pay-history-list"></div>
                 <div id="pay-history-pagination" class="pagination" style="margin-top:10px"></div>
