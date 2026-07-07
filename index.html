@@ -1836,6 +1836,29 @@
         </div>
     </div>
 
+    <!-- Yangi test qo'shish modali -->
+    <div class="modal-backdrop" id="test-modal">
+        <div class="modal-box" style="max-width:560px;max-height:88vh;overflow-y:auto">
+            <div class="modal-title"><i class="fas fa-flask"></i> Yangi test qo'shish</div>
+            <div class="form-group"><label>Test nomi *</label><input id="newTestName" placeholder="masalan: Kompyuter savodxonligi"></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
+                <div class="form-group"><label>Vaqt (soniya)</label><input id="newTestTime" type="number" min="1" value="30"></div>
+                <div class="form-group"><label>Maks. xato</label><input id="newTestMaxWrong" type="number" min="0" value="3"></div>
+                <div class="form-group"><label>O'tish balli</label><input id="newTestPassScore" type="number" min="0" placeholder="masalan: 17"></div>
+            </div>
+            <div class="form-group mb-0">
+                <label style="color:var(--text2)">Savol va javoblar</label>
+                <div id="newTestQuestionsContainer" style="max-height:360px;overflow-y:auto;padding-right:4px"></div>
+                <button type="button" class="btn btn-ghost btn-sm mt-2" onclick="newTestAddQuestion()"><i class="fas fa-plus"></i> Savol qo'shish</button>
+                <small class="text-muted mt-2 d-block" style="color:var(--text3) !important;">Har bir savol uchun kamida 2 ta variant kiriting va radio tugma orqali to'g'ri javobni belgilang.</small>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('test-modal')">Bekor</button>
+                <button class="btn btn-primary" onclick="saveNewTest()"><i class="fas fa-save"></i> Saqlash</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Universal tasdiqlash modali (confirm() o'rniga) -->
     <div class="modal-backdrop" id="confirm-modal">
         <div class="modal-box">
@@ -3738,6 +3761,7 @@
 
         let testsList = loadTests();
         let activeTest = null;
+        let testSearch = "";
 
         function prepareQuestions(questions) {
             return questions.map(q => ({
@@ -3952,25 +3976,199 @@
             if (failText) failText.innerText = testWrongCount + " ta xato";
         }
 
-        // ===================== TESTLAR (TOG'RIDAN-TOG'RI BIRINCHI TEST) =====================
-        // Testlar bo'limiga o'tilganda ro'yxat/qidiruv o'rniga to'g'ridan-to'g'ri
-        // birinchi test ("Kompyuter savodxonligi") ochiladi.
+        // ===================== TESTLAR RO'YXATI (BOSH SAHIFA) =====================
         function renderTests() {
             const content = document.getElementById("content");
-            content.innerHTML = `<div class="tests-wrapper"><div id="testsContent"></div></div>`;
+            content.innerHTML = `
+    <div class="tests-wrapper">
+        <div class="filter-bar">
+            <input id="t-search" placeholder="🔍 Test nomi bo'yicha izlash..." style="flex:1">
+            <button class="btn btn-primary" onclick="openAddTestModal()"><i class="fas fa-plus"></i> Test qo'shish</button>
+        </div>
+        <div id="testsContent"></div>
+    </div>`;
 
+            const searchInput = document.getElementById("t-search");
+            searchInput.value = testSearch;
+            searchInput.addEventListener("input", e => {
+                testSearch = e.target.value;
+                renderTestsGrid();
+            });
+
+            activeTest = null;
+            renderTestsGrid();
+        }
+
+        function renderTestsGrid() {
+            const container = document.getElementById("testsContent");
+            if (!container) return;
+            const filtered = testsList.filter(t => t.name.toLowerCase().includes(testSearch.toLowerCase()));
             if (!testsList.length) {
-                document.getElementById("testsContent").innerHTML = `<div class="empty"><i class="fas fa-flask fa-3x" style="color:var(--accent2)"></i><h3>Testlar yo'q</h3></div>`;
+                container.innerHTML = `<div class="empty"><i class="fas fa-flask fa-3x" style="color:var(--accent2)"></i><h3>Testlar yo'q</h3><p>Yuqoridagi "Test qo'shish" tugmasi orqali birinchi testni qo'shing</p></div>`;
                 return;
             }
-
-            openTestStart(testsList[0].id);
+            if (!filtered.length) {
+                container.innerHTML = `<div class="empty"><i class="fas fa-magnifying-glass fa-3x" style="color:var(--accent2)"></i><h3>Test topilmadi</h3><p>Qidiruv bo'yicha hech qanday test topilmadi</p></div>`;
+                return;
+            }
+            container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+                ${filtered.map(t => `
+                    <div class="test-select-card" onclick="openTestStart('${t.id}')" style="cursor:pointer;background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:14px;padding:22px 18px;text-align:center;transition:.2s">
+                        <i class="fas fa-flask fa-2x" style="color:#38BDF8;margin-bottom:10px"></i>
+                        <h4 style="color:var(--text1);margin:8px 0 4px;word-break:break-word">${escapeHtml(t.name)}</h4>
+                        <small style="color:var(--text3)">${t.questions.length} ta savol</small>
+                    </div>
+                `).join("")}
+            </div>`;
         }
 
         function openTestStart(id) {
             activeTest = testsList.find(t => t.id === id);
             if (!activeTest) return;
             renderTestQuizFlow();
+        }
+
+        // ===================== YANGI TEST QO'SHISH =====================
+        let newTestQuestions = [];
+
+        function escapeHtml(str) {
+            return String(str ?? "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#39;");
+        }
+
+        function newTestBlankQuestion() {
+            return { question: "", options: ["", ""], correct: 0 };
+        }
+
+        function renderNewTestQuestions() {
+            const container = document.getElementById("newTestQuestionsContainer");
+            if (!container) return;
+            container.innerHTML = newTestQuestions.map((q, qi) => `
+                <div class="test-q-block" style="background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:12px;padding:14px;margin-bottom:12px">
+                    <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px">
+                        <strong style="color:var(--text2)">Savol ${qi + 1}</strong>
+                        ${newTestQuestions.length > 1 ? `<button type="button" class="btn btn-danger btn-sm" data-remove-q="${qi}" title="Savolni o'chirish"><i class="fas fa-trash"></i></button>` : ""}
+                    </div>
+                    <input type="text" class="mb-2" style="width:100%" data-q-text="${qi}" placeholder="Savol matnini kiriting" value="${escapeHtml(q.question)}">
+                    <div data-options-wrap="${qi}">
+                        ${q.options.map((opt, oi) => `
+                            <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                                <input type="radio" name="correct-${qi}" data-correct-radio="${qi}" data-oi="${oi}" ${q.correct === oi ? "checked" : ""} title="To'g'ri javob sifatida belgilash">
+                                <input type="text" data-opt-text="${qi}" data-oi-text="${oi}" placeholder="Variant ${oi + 1}" value="${escapeHtml(opt)}" style="flex:1">
+                                ${q.options.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" data-remove-opt="${qi}" data-oi-remove="${oi}" title="Variantni o'chirish"><i class="fas fa-times"></i></button>` : ""}
+                            </div>
+                        `).join("")}
+                    </div>
+                    <button type="button" class="btn btn-ghost btn-sm" data-add-opt="${qi}"><i class="fas fa-plus"></i> Variant qo'shish</button>
+                </div>
+            `).join("");
+
+            container.querySelectorAll("[data-q-text]").forEach(el => {
+                el.addEventListener("input", e => {
+                    newTestQuestions[parseInt(el.getAttribute("data-q-text"))].question = e.target.value;
+                });
+            });
+            container.querySelectorAll("[data-opt-text]").forEach(el => {
+                el.addEventListener("input", e => {
+                    const qi = parseInt(el.getAttribute("data-opt-text"));
+                    const oi = parseInt(el.getAttribute("data-oi-text"));
+                    newTestQuestions[qi].options[oi] = e.target.value;
+                });
+            });
+            container.querySelectorAll("[data-correct-radio]").forEach(el => {
+                el.addEventListener("change", () => {
+                    const qi = parseInt(el.getAttribute("data-correct-radio"));
+                    const oi = parseInt(el.getAttribute("data-oi"));
+                    newTestQuestions[qi].correct = oi;
+                });
+            });
+            container.querySelectorAll("[data-remove-q]").forEach(el => {
+                el.addEventListener("click", () => {
+                    newTestQuestions.splice(parseInt(el.getAttribute("data-remove-q")), 1);
+                    renderNewTestQuestions();
+                });
+            });
+            container.querySelectorAll("[data-add-opt]").forEach(el => {
+                el.addEventListener("click", () => {
+                    newTestQuestions[parseInt(el.getAttribute("data-add-opt"))].options.push("");
+                    renderNewTestQuestions();
+                });
+            });
+            container.querySelectorAll("[data-remove-opt]").forEach(el => {
+                el.addEventListener("click", () => {
+                    const qi = parseInt(el.getAttribute("data-remove-opt"));
+                    const oi = parseInt(el.getAttribute("data-oi-remove"));
+                    const q = newTestQuestions[qi];
+                    q.options.splice(oi, 1);
+                    if (q.correct >= q.options.length) q.correct = q.options.length - 1;
+                    else if (q.correct > oi) q.correct -= 1;
+                    renderNewTestQuestions();
+                });
+            });
+        }
+
+        function newTestAddQuestion() {
+            newTestQuestions.push(newTestBlankQuestion());
+            renderNewTestQuestions();
+        }
+
+        function openAddTestModal() {
+            document.getElementById("newTestName").value = "";
+            document.getElementById("newTestTime").value = 30;
+            document.getElementById("newTestMaxWrong").value = 3;
+            document.getElementById("newTestPassScore").value = "";
+            newTestQuestions = [newTestBlankQuestion()];
+            renderNewTestQuestions();
+            openModal("test-modal");
+        }
+
+        function saveNewTest() {
+            const name = document.getElementById("newTestName").value.trim();
+            const timeSec = parseInt(document.getElementById("newTestTime").value) || 30;
+            const maxWrong = parseInt(document.getElementById("newTestMaxWrong").value) || 3;
+            let passScore = parseInt(document.getElementById("newTestPassScore").value);
+
+            if (!name) { toast("Test nomini kiriting", "error"); return; }
+            if (!newTestQuestions.length) { toast("Kamida 1 ta savol qo'shing", "error"); return; }
+
+            let questions;
+            try {
+                questions = newTestQuestions.map((q, i) => {
+                    const questionText = (q.question || "").trim();
+                    const options = q.options.map(o => (o || "").trim()).filter(o => o.length > 0);
+                    if (!questionText) {
+                        throw new Error(`${i + 1}-savol matni kiritilmagan`);
+                    }
+                    if (options.length < 2) {
+                        throw new Error(`${i + 1}-savolda kamida 2 ta variant bo'lishi kerak`);
+                    }
+                    const answer = (q.options[q.correct] || "").trim();
+                    if (!answer || !options.includes(answer)) {
+                        throw new Error(`${i + 1}-savolda to'g'ri javobni belgilang`);
+                    }
+                    return { question: questionText, answer, options };
+                });
+            } catch (e) {
+                toast(e.message, "error");
+                return;
+            }
+
+            if (isNaN(passScore) || passScore < 0) passScore = Math.ceil(questions.length * 0.6);
+
+            testsList.push({
+                id: "test-" + Date.now(),
+                name,
+                settings: { timePerQuestion: timeSec, maxWrong, passScore },
+                questions
+            });
+            saveTests();
+            closeModal("test-modal");
+            toast("Test muvaffaqiyatli qo'shildi");
+            renderTestsGrid();
         }
 
         // ===================== TANLANGAN TESTNI ISHLASH KO'RINISHI =====================
