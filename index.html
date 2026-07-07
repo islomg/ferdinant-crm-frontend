@@ -4107,8 +4107,8 @@
                     <div data-options-wrap="${qi}">
                         ${q.options.map((opt, oi) => `
                             <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-                                <input type="radio" name="correct-${qi}" data-correct-radio="${qi}" data-oi="${oi}" ${q.correct === oi ? "checked" : ""} title="To'g'ri javob sifatida belgilash">
-                                <input type="text" data-opt-text="${qi}" data-oi-text="${oi}" placeholder="Variant ${oi + 1}" value="${escapeHtml(opt)}" style="flex:1">
+                                <input type="radio" name="correct-${qi}" data-correct-radio="${qi}" data-oi="${oi}" ${q.correct === oi ? "checked" : ""} title="To'g'ri javob sifatida belgilash" style="width:16px;height:16px;flex:0 0 auto;min-width:16px">
+<input type="text" data-opt-text="${qi}" data-oi-text="${oi}" placeholder="Variant ${oi + 1}" value="${escapeHtml(opt)}" style="flex:1;min-width:0;width:auto">
                                 ${q.options.length > 2 ? `<button type="button" class="btn btn-ghost btn-sm" data-remove-opt="${qi}" data-oi-remove="${oi}" title="Variantni o'chirish"><i class="fas fa-times"></i></button>` : ""}
                             </div>
                         `).join("")}

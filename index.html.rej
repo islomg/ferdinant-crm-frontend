@@ -1,10 +1,47 @@
-diff a/frontend/index.html b/frontend/index.html	(rejected hunks)
-@@ -1937,7 +1940,7 @@
-             const totalIncome = payments.reduce((s, p) => s + p.amount, 0);
-             const totalDebt = students.reduce((s, st) => s + st.debt_amount, 0);
-             const debtors = students.filter(s => s.debt_amount > 0).length;
--            const recentPays = [...payments].sort((a, b) => b.id - a.id).slice(0, 8);
-+            const recentPays = payments.filter(p => p.month === curMonth() && p.year === curYear()).sort((a, b) => b.id - a.id).slice(0, 8);
+diff a/index.html b/index.html	(rejected hunks)
+@@ -4014,9 +4014,8 @@
+             container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
+                 ${filtered.map(t => `
+                     <div class="test-select-card" onclick="openTestStart('${t.id}')" style="cursor:pointer;position:relative;background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:14px;padding:22px 18px;text-align:center;transition:.2s">
+-                        <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px">
+-                            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditTestModal('${t.id}')" title="Testni tahrirlash" style="padding:4px 8px"><i class="fas fa-pen"></i></button>
+-                            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTest('${t.id}')" title="Testni o'chirish" style="padding:4px 8px"><i class="fas fa-trash"></i></button>
++                        <div class="dd-wrap" style="position:absolute;top:8px;right:8px" onclick="event.stopPropagation()">
++                            <button class="btn btn-ghost btn-sm test-dd-toggle-btn" data-test-id="${t.id}" style="padding:4px 8px"><i class="fas fa-ellipsis-v"></i></button>
+                         </div>
+                         <i class="fas fa-flask fa-2x" style="color:#38BDF8;margin-bottom:10px"></i>
+                         <h4 style="color:var(--text1);margin:8px 0 4px;word-break:break-word">${escapeHtml(t.name)}</h4>
+@@ -4024,6 +4023,33 @@
+                     </div>
+                 `).join("")}
+             </div>`;
++            document.querySelectorAll(".test-dd-toggle-btn").forEach(btn => {
++                btn.addEventListener("click", (e) => {
++                    e.stopPropagation();
++                    toggleTestDD(e, btn.dataset.testId);
++                });
++            });
++        }
++
++        function toggleTestDD(e, id) {
++            e.stopPropagation();
++            const wasOpen = document.querySelector(`.dd-menu[data-owner="test-${id}"]`);
++            closeAllDropdowns();
++            if (wasOpen) return; // ikkinchi bosishda yopilsin
++
++            const btn = e.currentTarget;
++            const rect = btn.getBoundingClientRect();
++            const menu = document.createElement("div");
++            menu.className = "dd-menu";
++            menu.dataset.owner = `test-${id}`;
++            menu.style.position = "fixed";
++            menu.style.top = (rect.bottom + 6) + "px";
++            menu.style.right = (window.innerWidth - rect.right) + "px";
++            menu.innerHTML = `
++                <button class="dd-item" onclick="openEditTestModal('${id}')"><i class="fas fa-pen"></i> Tahrirlash</button>
++                <button class="dd-item red" onclick="deleteTest('${id}')"><i class="fas fa-trash"></i> O'chirish</button>
++            `;
++            document.body.appendChild(menu);
+         }
  
-             document.getElementById("content").innerHTML = `
-         <div class="stats-row">
+         // Testni ro'yxatdan va localStorage'dan o'chirish
