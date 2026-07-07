@@ -760,6 +760,18 @@
             gap: 8px
         }
 
+        .ph-income-badge {
+            background: rgba(16, 185, 129, 0.12);
+            color: var(--green);
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: none;
+            letter-spacing: normal;
+            white-space: nowrap;
+        }
+
         .section-title::before {
             content: '';
             width: 3px;
@@ -3010,14 +3022,17 @@
             <div id="pay-students-list"></div>
             <div id="pay-students-pagination" class="pagination" style="margin-bottom:16px"></div>
             <div class="chart-box">
-                <div class="ph-header-row" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
-                <div id="pay-history-title" class="section-title" style="margin:0">To'lovlar tarixi</div>
+               <div class="ph-header-row" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">
+                <div class="ph-title-group" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                    <div id="pay-history-title" class="section-title" style="margin:0">To'lovlar tarixi</div>
+                    <div id="pay-history-income" class="ph-income-badge">Iyul 2026 — 0 so'm</div>
+                </div>
                 <div class="ph-controls-row" style="display:flex;gap:8px;flex-wrap:wrap">
                     <input id="ph-search" placeholder="🔍 O'quvchi izlash..." style="min-width:160px">
                     <select id="ph-month" style="min-width:110px"></select>
                     <select id="ph-year" style="min-width:90px"></select>
                 </div>
-                </div>
+            </div>
                 <div id="pay-history-list"></div>
                 <div id="pay-history-pagination" class="pagination" style="margin-top:10px"></div>
             </div>`;
