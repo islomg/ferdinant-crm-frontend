@@ -1839,7 +1839,7 @@
     <!-- Yangi test qo'shish modali -->
     <div class="modal-backdrop" id="test-modal">
         <div class="modal-box" style="max-width:560px;max-height:88vh;overflow-y:auto">
-            <div class="modal-title"><i class="fas fa-flask"></i> Yangi test qo'shish</div>
+            <div class="modal-title" id="testModalTitle"><i class="fas fa-flask"></i> Yangi test qo'shish</div>
             <div class="form-group"><label>Test nomi *</label><input id="newTestName" placeholder="masalan: Kompyuter savodxonligi"></div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">
                 <div class="form-group"><label>Vaqt (soniya)</label><input id="newTestTime" type="number" min="1" value="30"></div>
@@ -1854,7 +1854,7 @@
             </div>
             <div class="modal-actions">
                 <button class="btn btn-ghost" onclick="closeModal('test-modal')">Bekor</button>
-                <button class="btn btn-primary" onclick="saveNewTest()"><i class="fas fa-save"></i> Saqlash</button>
+                <button class="btn btn-primary" id="testModalSaveBtn" onclick="saveNewTest()"><i class="fas fa-save"></i> Saqlash</button>
             </div>
         </div>
     </div>
@@ -4014,7 +4014,10 @@
             container.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px">
                 ${filtered.map(t => `
                     <div class="test-select-card" onclick="openTestStart('${t.id}')" style="cursor:pointer;position:relative;background:var(--bg2);border:1px solid rgba(71,85,105,0.3);border-radius:14px;padding:22px 18px;text-align:center;transition:.2s">
-                        <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTest('${t.id}')" title="Testni o'chirish" style="position:absolute;top:8px;right:8px;padding:4px 8px"><i class="fas fa-trash"></i></button>
+                        <div style="position:absolute;top:8px;right:8px;display:flex;gap:6px">
+                            <button class="btn btn-ghost btn-sm" onclick="event.stopPropagation();openEditTestModal('${t.id}')" title="Testni tahrirlash" style="padding:4px 8px"><i class="fas fa-pen"></i></button>
+                            <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();deleteTest('${t.id}')" title="Testni o'chirish" style="padding:4px 8px"><i class="fas fa-trash"></i></button>
+                        </div>
                         <i class="fas fa-flask fa-2x" style="color:#38BDF8;margin-bottom:10px"></i>
                         <h4 style="color:var(--text1);margin:8px 0 4px;word-break:break-word">${escapeHtml(t.name)}</h4>
                         <small style="color:var(--text3)">${t.questions.length} ta savol</small>
@@ -4048,8 +4051,9 @@
             renderTests();
         }
 
-        // ===================== YANGI TEST QO'SHISH =====================
+        // ===================== YANGI TEST QO'SHISH / TAHRIRLASH =====================
         let newTestQuestions = [];
+        let editingTestId = null; // null bo'lsa - yangi test, aks holda tahrirlanayotgan test id'si
 
         function escapeHtml(str) {
             return String(str ?? "")
@@ -4137,11 +4141,35 @@
         }
 
         function openAddTestModal() {
+            editingTestId = null;
+            document.getElementById("testModalTitle").innerHTML = `<i class="fas fa-flask"></i> Yangi test qo'shish`;
+            document.getElementById("testModalSaveBtn").innerHTML = `<i class="fas fa-save"></i> Saqlash`;
             document.getElementById("newTestName").value = "";
             document.getElementById("newTestTime").value = 30;
             document.getElementById("newTestMaxWrong").value = 3;
             document.getElementById("newTestPassScore").value = "";
             newTestQuestions = [newTestBlankQuestion()];
+            renderNewTestQuestions();
+            openModal("test-modal");
+        }
+
+        // Mavjud testni tahrirlash uchun modalni ochib, uning ma'lumotlari bilan to'ldiradi
+        function openEditTestModal(id) {
+            const test = testsList.find(t => t.id === id);
+            if (!test) return;
+            editingTestId = id;
+            document.getElementById("testModalTitle").innerHTML = `<i class="fas fa-flask"></i> Testni tahrirlash`;
+            document.getElementById("testModalSaveBtn").innerHTML = `<i class="fas fa-save"></i> Saqlash (tahrirlash)`;
+            document.getElementById("newTestName").value = test.name;
+            document.getElementById("newTestTime").value = test.settings.timePerQuestion;
+            document.getElementById("newTestMaxWrong").value = test.settings.maxWrong;
+            document.getElementById("newTestPassScore").value = test.settings.passScore;
+            newTestQuestions = test.questions.map(q => ({
+                question: q.question,
+                options: q.options.slice(),
+                correct: q.options.indexOf(q.answer)
+            }));
+            if (!newTestQuestions.length) newTestQuestions = [newTestBlankQuestion()];
             renderNewTestQuestions();
             openModal("test-modal");
         }
@@ -4178,6 +4206,26 @@
             }
 
             if (isNaN(passScore) || passScore < 0) passScore = Math.ceil(questions.length * 0.6);
+
+            if (editingTestId) {
+                const idx = testsList.findIndex(t => t.id === editingTestId);
+                if (idx === -1) {
+                    toast("Tahrirlanayotgan test topilmadi", "error");
+                    return;
+                }
+                testsList[idx] = {
+                    id: editingTestId,
+                    name,
+                    settings: { timePerQuestion: timeSec, maxWrong, passScore },
+                    questions
+                };
+                saveTests();
+                closeModal("test-modal");
+                toast("Test muvaffaqiyatli tahrirlandi");
+                editingTestId = null;
+                renderTestsGrid();
+                return;
+            }
 
             testsList.push({
                 id: "test-" + Date.now(),
