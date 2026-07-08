@@ -122,10 +122,44 @@ async function apiCall(endpoint, method = 'GET', body = null) {
 
 // ===================== LOGOUT =====================
 async function logout() {
+    // Bu — ataylab (tugma bosib) chiqish, shuning uchun pagehide'dagi
+    // "saytdan chiqdi" xabari qayta yuborilmasin (auth_logout o'zi allaqachon
+    // "Tizimdan chiqish" xabarini yuboradi).
+    window.__ferdinantIntentionalLogout = true;
     try { await apiCall('/auth/logout/', 'POST'); } catch (e) {}
     clearToken();
     location.reload();
 }
+
+// ===================== SAYTGA KIRISH / CHIQISH XABARLARI =====================
+// Token orqali avtomatik kirgan (parol qayta so'ralmagan) foydalanuvchi
+// sahifani ochganda ham Telegram botga "Saytga kirdi" xabari yuboriladi.
+function notifySiteEnter() {
+    apiCall('/auth/site-enter/', 'POST', { device_id: getDeviceId() }).catch(() => {});
+}
+
+// Brauzer/tab yopilganda yoki sahifadan chiqib ketilganda ishonchli
+// yetkazish uchun navigator.sendBeacon ishlatiladi (fetch bu paytda
+// tugallanmasligi mumkin). sendBeacon Authorization header qo'sha
+// olmagani uchun token so'rov tanasida yuboriladi.
+function notifySiteLeave() {
+    if (window.__ferdinantIntentionalLogout) return; // logout() o'zi xabar yuboradi
+    const token = getToken();
+    if (!token) return;
+    try {
+        const blob = new Blob([JSON.stringify({ token })], { type: 'application/json' });
+        navigator.sendBeacon(`${API_BASE}/auth/site-leave/`, blob);
+    } catch (e) {
+        // sendBeacon mavjud bo'lmasa — jim o'tkazamiz, sahifa yopilayotgani uchun
+        // uzoq davom etadigan fetch ishonchli yetib bormaydi.
+    }
+}
+
+// Eslatma: 'visibilitychange' ataylab ishlatilmadi — u tab almashtirishda
+// yoki ekran qulflanganda ham ishga tushib, "chiqdi" xabarini asossiz
+// ko'p yuborib yuborardi. 'pagehide' esa faqat tab/oyna yopilganda,
+// sahifadan boshqa manzilga o'tilganda yoki reload qilinganda ishga tushadi.
+window.addEventListener('pagehide', notifySiteLeave);
 
 // ===================== TELEGRAM OTP =====================
 const TG_BOT_TOKEN = '8786009968:AAGjxds1ZdvQ8n8ctH8HoLjhElK2hmCTIt0';
@@ -859,6 +893,7 @@ async function deleteUserFromPage(userId) {
             if (res.ok) {
                 setCurrentUserData(res.data);
                 addTopbarButtons();
+                notifySiteEnter(); // token orqali avtomatik kirdi — botga xabar
             } else {
                 // Token eskirgan yoki noto'g'ri — qayta login
                 clearToken();
