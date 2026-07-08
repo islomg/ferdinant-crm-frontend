@@ -146,12 +146,28 @@ function notifySiteLeave() {
     if (window.__ferdinantIntentionalLogout) return; // logout() o'zi xabar yuboradi
     const token = getToken();
     if (!token) return;
+    const url = `${API_BASE}/auth/site-leave/`;
     try {
-        const blob = new Blob([JSON.stringify({ token })], { type: 'application/json' });
-        navigator.sendBeacon(`${API_BASE}/auth/site-leave/`, blob);
+        // MUHIM: Blob'ga 'application/json' turi berilsa, bu cross-origin
+        // (frontend Netlify, backend Railway) so'rov CORS preflight talab
+        // qiladi — lekin sendBeacon preflight'ni UMUMAN qo'llamaydi, shu sabab
+        // brauzer so'rovni jo'natmay bekor qilardi ("kirdi" xabari kelib,
+        // "chiqdi" kelmasligining sababi shu edi). 'application/x-www-form-
+        // urlencoded' esa CORS-safelisted bo'lgani uchun preflight'siz ketadi.
+        const params = new URLSearchParams();
+        params.set('token', token);
+        const ok = navigator.sendBeacon(url, params);
+        if (!ok && window.fetch) {
+            // sendBeacon navbatga qo'yolmasa — fetch(keepalive) bilan urinib ko'ramiz
+            fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: params.toString(),
+                keepalive: true,
+            }).catch(() => {});
+        }
     } catch (e) {
-        // sendBeacon mavjud bo'lmasa — jim o'tkazamiz, sahifa yopilayotgani uchun
-        // uzoq davom etadigan fetch ishonchli yetib bormaydi.
+        // Sahifa yopilayotgani uchun bu yerda qayta urinish imkoni yo'q.
     }
 }
 
