@@ -21,7 +21,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script src="https://unpkg.com/pdf-lib/dist/pdf-lib.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style/dist/xlsx.bundle.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
     <style>
@@ -3302,32 +3302,91 @@
                 return;
             }
 
-            const data = rows.map((p, i) => {
-                const st = students.find(s => s.id === p.student);
-                return {
-                    "№": i + 1,
-                    "O'quvchi": st?.name || p.student_name_snapshot || "Noma'lum",
-                    "Summa (so'm)": p.amount,
-                    "Oy": p.month,
-                    "Yil": p.year,
-                    "Sana": p.date || ""
-                };
+            // O'quvchi ismi bo'yicha alifbo tartibida saralaymiz
+            const sorted = [...rows].sort((a, b) => {
+                const stA = students.find(s => s.id === a.student);
+                const stB = students.find(s => s.id === b.student);
+                const nameA = stA?.name || a.student_name_snapshot || "";
+                const nameB = stB?.name || b.student_name_snapshot || "";
+                return nameA.localeCompare(nameB, "uz");
             });
 
-            const totalRow = {
-                "№": "",
-                "O'quvchi": "Jami",
-                "Summa (so'm)": rows.reduce((s, p) => s + p.amount, 0),
-                "Oy": "",
-                "Yil": "",
-                "Sana": ""
-            };
-            data.push(totalRow);
+            // --- Stil sozlamalari (och/yorqin ranglar, toq/quyuq rang yo'q) ---
+            const HEADER_FILL = "4F81BD";   // yorqin ko'k
+            const HEADER_FONT = "FFFFFF";
+            const ROW_FILL_A = "DCE6F1";    // och ko'k
+            const ROW_FILL_B = "E5F1DE";    // och yashil
+            const TOTAL_FILL = "FDE9A9";    // och sariq/oltin
+            const BORDER_COLOR = "B7B7B7";
 
-            const worksheet = XLSX.utils.json_to_sheet(data);
+            const thinBorder = {
+                top: { style: "thin", color: { rgb: BORDER_COLOR } },
+                bottom: { style: "thin", color: { rgb: BORDER_COLOR } },
+                left: { style: "thin", color: { rgb: BORDER_COLOR } },
+                right: { style: "thin", color: { rgb: BORDER_COLOR } }
+            };
+
+            const headerStyle = {
+                font: { bold: true, color: { rgb: HEADER_FONT }, sz: 12 },
+                fill: { fgColor: { rgb: HEADER_FILL } },
+                alignment: { horizontal: "center", vertical: "center" },
+                border: thinBorder
+            };
+
+            const cellStyle = (fillColor, opts = {}) => ({
+                font: { sz: 11, bold: !!opts.bold },
+                fill: { fgColor: { rgb: fillColor } },
+                alignment: { horizontal: opts.align || "left", vertical: "center" },
+                border: thinBorder
+            });
+
+            // Sarlavha qatori
+            const headers = ["№", "O'quvchi (Ism Familiya)", "To'lov summasi (so'm)", "To'lov sanasi"];
+            const aoa = [headers];
+
+            sorted.forEach((p, i) => {
+                const st = students.find(s => s.id === p.student);
+                const name = st?.name || p.student_name_snapshot || "Noma'lum";
+                aoa.push([i + 1, name, p.amount, p.date || ""]);
+            });
+
+            const totalSum = sorted.reduce((s, p) => s + p.amount, 0);
+            const totalRowIndex = aoa.length;
+            aoa.push(["", "Jami", totalSum, ""]);
+
+            const worksheet = XLSX.utils.aoa_to_sheet(aoa);
             worksheet["!cols"] = [
-                { wch: 5 }, { wch: 28 }, { wch: 16 }, { wch: 12 }, { wch: 8 }, { wch: 14 }
+                { wch: 6 }, { wch: 32 }, { wch: 20 }, { wch: 16 }
             ];
+            worksheet["!rows"] = [{ hpt: 22 }];
+
+            const range = XLSX.utils.decode_range(worksheet["!ref"]);
+            for (let R = range.s.r; R <= range.e.r; R++) {
+                for (let C = range.s.c; C <= range.e.c; C++) {
+                    const addr = XLSX.utils.encode_cell({ r: R, c: C });
+                    if (!worksheet[addr]) continue;
+
+                    if (R === 0) {
+                        worksheet[addr].s = headerStyle;
+                    } else if (R === totalRowIndex) {
+                        worksheet[addr].s = cellStyle(TOTAL_FILL, {
+                            bold: true,
+                            align: C === 1 ? "left" : (C === 0 ? "center" : "right")
+                        });
+                    } else {
+                        const zebra = (R % 2 === 1) ? ROW_FILL_A : ROW_FILL_B;
+                        worksheet[addr].s = cellStyle(zebra, {
+                            align: C === 1 ? "left" : (C === 0 ? "center" : (C === 2 ? "right" : "center"))
+                        });
+                    }
+                }
+            }
+
+            // Summa ustunini son formatida ko'rsatish
+            for (let R = 1; R <= totalRowIndex; R++) {
+                const addr = XLSX.utils.encode_cell({ r: R, c: 2 });
+                if (worksheet[addr]) worksheet[addr].z = "#,##0";
+            }
 
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "To'lovlar tarixi");
