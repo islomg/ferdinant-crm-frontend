@@ -3185,44 +3185,8 @@
             }
         }
 
-        // Qarzdorlar bo'limidagi 3-tugma: joriy vaqtga qarab, HOZIR darsi
-        // davom etayotgan guruh(lar)dagi BARCHA o'quvchilarga (qarzdorligidan
-        // qat'i nazar) Telegram orqali ogohlantirish yuboradi. Guruh topilish
-        // mantig'i (boshlanish_vaqti <= hozirgi_vaqt < tugash_vaqti) backendda
-        // hisoblanadi, shuning uchun bu yerda faqat so'rov yuboriladi.
-        let telegramCurrentLessonSending = false;
-        async function sendTelegramCurrentLessonWarning() {
-            if (telegramCurrentLessonSending) return;
 
-            const confirmed = await showConfirm(
-                "Hozir darsi davom etayotgan guruh(lar)dagi barcha o'quvchilarga Telegram orqali ogohlantirish yuborilsinmi?",
-                { title: "Ogohlantirish yuborish", okText: "Yuborish", okClass: "btn-primary" }
-            );
-            if (!confirmed) return;
 
-            telegramCurrentLessonSending = true;
-            try {
-                const res = await fetch(`${API_URL}/telegram/send-current-lesson-warning/`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' }
-                });
-                const data = await res.json().catch(() => ({}));
-                if (res.ok) {
-                    closeModal('telegram-warn-modal');
-                    if (data.sent > 0) {
-                        toast(`✅ Yuborilmoqda (${data.sent} ta o'quvchi)`);
-                    } else {
-                        toast(data.message || "Hozir darsi davom etayotgan guruh topilmadi", "error");
-                    }
-                } else {
-                    toast(data.error || "Yuborishda xato yuz berdi", "error");
-                }
-            } catch (err) {
-                toast("Tarmoq xatosi — qayta urinib ko'ring", "error");
-            } finally {
-                telegramCurrentLessonSending = false;
-            }
-        }
 
         // Qarzdorlar bo'limidagi 3-tugma: joriy vaqtga qarab, HOZIR darsi
         // davom etayotgan guruh(lar)dagi BARCHA o'quvchilarga (qarzdorligidan
