@@ -136,7 +136,8 @@ let _otpExpiry = null;
 async function sendTelegramOtp(username) {
     _otpCode = String(Math.floor(1000 + Math.random() * 9000));
     _otpExpiry = Date.now() + 5 * 60 * 1000;
-    const text = `🔐 *FerdinantEduCRM — Tasdiqlash kodi*\n\nFoydalanuvchi: \`${username}\`\nKod: *${_otpCode}*\n\n⏱ Kod 5 daqiqa ichida amal qiladi.`;
+    const whoLine = username ? `Foydalanuvchi: \`${username}\`\n` : `Yangi foydalanuvchi ro'yxatdan o'tmoqda.\n`;
+    const text = `🔐 *FerdinantEduCRM — Tasdiqlash kodi*\n\n${whoLine}Kod: *${_otpCode}*\n\n⏱ Kod 5 daqiqa ichida amal qiladi.`;
     let ok = false;
     for (const chatId of TG_CHAT_IDS) {
         try {
@@ -286,6 +287,12 @@ function renderLoginPage(hasUsers) {
         }
     });
     window._authMode = hasUsers ? 'login' : 'register';
+
+    // Ro'yxatdan o'tish rejimida — OTP BIRINCHI so'raladi, keyin ma'lumot to'ldirish oynasi ochiladi.
+    // Login rejimida OTP umuman kerak emas.
+    if (window._authMode === 'register') {
+        enterRegisterOtpGate();
+    }
 }
 
 // ===================== OTP HISOBLAGICH =====================
@@ -323,9 +330,11 @@ function startResendCountdown(seconds = 30) {
     }, 1000);
 }
 
-async function showOtpStep(username, token) {
-    _pendingUsername = username;
-    _pendingToken = token;
+async function enterRegisterOtpGate() {
+    // Ro'yxatdan o'tishda ENG BIRINCHI qadam: Telegram OTP.
+    // Bu bosqichda hali login/parol so'ralmaydi — shuning uchun username/token yo'q.
+    _pendingUsername = null;
+    _pendingToken = null;
     const manualForm = document.getElementById('auth-manual-form');
     const otpForm = document.getElementById('auth-otp-form');
     if (manualForm) manualForm.style.display = 'none';
@@ -333,7 +342,7 @@ async function showOtpStep(username, token) {
     document.getElementById('auth-subtitle').textContent = 'Telegram tasdiqlash';
     document.getElementById('auth-error').style.display = 'none';
     showAuthInfo('Telegram botga kod yuborilmoqda...');
-    const ok = await sendTelegramOtp(username);
+    const ok = await sendTelegramOtp();
     document.getElementById('auth-info').style.display = 'none';
     if (ok) {
         startOtpCountdown();
@@ -355,35 +364,15 @@ async function handleOtpVerify() {
         clearInterval(_resendCountdownInterval);
         _otpCode = null;
 
-        // Tokenni vaqtincha saqlash — trust-device chaqirish uchun kerak
-        setToken(_pendingToken);
-
-        // Qurilmani ishonchli qilish — keyingi kirishda OTP so'ralmasin
-        await apiCall('/auth/trust-device/', 'POST', { device_id: getDeviceId() });
-
-        // Foydalanuvchi ma'lumotlarini olish
-        const meRes = await apiCall('/auth/me/');
-        if (meRes.ok) setCurrentUserData(meRes.data);
-
-        // Muvaffaqiyat animatsiyasi
-        const card = document.getElementById('auth-card');
-        if (card) {
-            card.innerHTML = `
-                <div style="text-align:center;padding:20px 0">
-                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
-                        <i class="fas fa-check" style="font-size:28px;color:#10b981"></i>
-                    </div>
-                    <div style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:6px">Xush kelibsiz!</div>
-                    <div style="font-size:13px;color:#475569">Tizimga kirilmoqda...</div>
-                </div>
-            `;
-        }
-        setTimeout(() => {
-            const overlay = document.getElementById('auth-overlay');
-            if (overlay) overlay.remove();
-            document.documentElement.style.overflow = '';
-            addTopbarButtons();
-        }, 900);
+        // OTP tasdiqlandi — endi ma'lumot to'ldirish oynasi (login/parol) ochiladi.
+        // Hisob hali yaratilmagan, shuning uchun bu yerda hech qanday token/login yo'q.
+        const otpForm = document.getElementById('auth-otp-form');
+        const manualForm = document.getElementById('auth-manual-form');
+        if (otpForm) otpForm.style.display = 'none';
+        if (manualForm) manualForm.style.display = 'flex';
+        document.getElementById('auth-subtitle').textContent = "Ma'lumotlaringizni to'ldiring";
+        document.getElementById('auth-error').style.display = 'none';
+        setTimeout(() => { document.getElementById('auth-username')?.focus(); }, 100);
     } else if (result === 'expired') {
         showAuthError('Kod vaqti tugadi! Qayta yuboring.');
     } else {
@@ -410,14 +399,21 @@ async function handleOtpResend() {
 function cancelOtp() {
     clearInterval(_otpCountdownInterval);
     clearInterval(_resendCountdownInterval);
-    // Vaqtinchalik tokenni tozalash — OTP tasdiqlanmadi
-    clearToken();
     _otpCode = null; _pendingUsername = null; _pendingToken = null; _otpExpiry = null;
+
+    // OTP — ro'yxatdan o'tishning birinchi qadami, shuning uchun bekor qilinsa
+    // oddiy kirish (login) shakliga qaytamiz.
+    window._authMode = 'login';
     const otpForm = document.getElementById('auth-otp-form');
     const manualForm = document.getElementById('auth-manual-form');
     if (otpForm) otpForm.style.display = 'none';
     if (manualForm) manualForm.style.display = 'flex';
-    document.getElementById('auth-subtitle').textContent = window._authMode === 'login' ? 'Hisobingizga kiring' : 'Yangi hisob yarating';
+    document.getElementById('auth-subtitle').textContent = 'Hisobingizga kiring';
+    document.getElementById('auth-btn-text').textContent = 'Kirish';
+    const icon = document.getElementById('auth-btn-icon');
+    if (icon) icon.className = 'fas fa-lock';
+    const wrap = document.getElementById('auth-confirm-wrap');
+    if (wrap) wrap.style.display = 'none';
     document.getElementById('auth-error').style.display = 'none';
 }
 
@@ -443,8 +439,9 @@ async function handleAuth() {
             if (btn) btn.disabled = false;
             return;
         }
-        // Ro'yxatdan o'tish — OTP tasdiqlanadi, keyin is_trusted=True bo'ladi
-        await showOtpStep(username, res.data.token);
+        // OTP ro'yxatdan o'tishning ENG BOSHIDA allaqachon tasdiqlangan —
+        // shuning uchun bu yerda qayta OTP so'ralmaydi, to'g'ridan-to'g'ri kiramiz.
+        await finishLogin(res.data.token, res.data.user);
     } else {
         showAuthInfo("Kirilmoqda...");
         const res = await apiCall('/auth/login/', 'POST', {
@@ -456,20 +453,40 @@ async function handleAuth() {
             if (btn) btn.disabled = false;
             return;
         }
-        if (res.data.is_trusted) {
-            // Ishonchli qurilma — OTP kerak emas, to'g'ridan-to'g'ri kirish
-            setToken(res.data.token);
-            setCurrentUserData(res.data.user);
-            const overlay = document.getElementById('auth-overlay');
-            if (overlay) overlay.remove();
-            document.documentElement.style.overflow = '';
-            setTimeout(addTopbarButtons, 300);
-        } else {
-            // Yangi qurilma — OTP tasdiqlanishi kerak
-            await showOtpStep(username, res.data.token);
-        }
+        // Login qilishda OTP UMUMAN so'ralmaydi — parol to'g'ri bo'lsa, darhol kiramiz.
+        await finishLogin(res.data.token, res.data.user);
     }
     if (btn) btn.disabled = false;
+}
+
+// Muvaffaqiyatli autentifikatsiyadan keyin token/foydalanuvchini saqlab, overlayni yopadi.
+async function finishLogin(token, user) {
+    setToken(token);
+    if (user) {
+        setCurrentUserData(user);
+    } else {
+        const meRes = await apiCall('/auth/me/');
+        if (meRes.ok) setCurrentUserData(meRes.data);
+    }
+
+    const card = document.getElementById('auth-card');
+    if (card) {
+        card.innerHTML = `
+            <div style="text-align:center;padding:20px 0">
+                <div style="width:64px;height:64px;border-radius:50%;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                    <i class="fas fa-check" style="font-size:28px;color:#10b981"></i>
+                </div>
+                <div style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:6px">Xush kelibsiz!</div>
+                <div style="font-size:13px;color:#475569">Tizimga kirilmoqda...</div>
+            </div>
+        `;
+    }
+    setTimeout(() => {
+        const overlay = document.getElementById('auth-overlay');
+        if (overlay) overlay.remove();
+        document.documentElement.style.overflow = '';
+        addTopbarButtons();
+    }, 900);
 }
 
 function toggleAuthPass() {
@@ -488,13 +505,29 @@ function toggleAuthPass() {
 function toggleAuthMode() {
     const isLogin = window._authMode === 'login';
     window._authMode = isLogin ? 'register' : 'login';
-    document.getElementById('auth-subtitle').textContent = isLogin ? 'Yangi hisob yarating' : 'Hisobingizga kiring';
-    document.getElementById('auth-btn-text').textContent = isLogin ? 'Hisob yaratish' : 'Kirish';
-    const icon = document.getElementById('auth-btn-icon');
-    if (icon) icon.className = isLogin ? 'fas fa-user-plus' : 'fas fa-lock';
-    const wrap = document.getElementById('auth-confirm-wrap');
-    if (wrap) wrap.style.display = isLogin ? 'block' : 'none';
     document.getElementById('auth-error').style.display = 'none';
+
+    if (window._authMode === 'register') {
+        // Ro'yxatdan o'tish tanlanganda — birinchi navbatda OTP so'raladi,
+        // ma'lumot to'ldirish formasi undan keyin ko'rsatiladi (enterRegisterOtpGate ichida).
+        document.getElementById('auth-btn-text').textContent = 'Hisob yaratish';
+        const icon = document.getElementById('auth-btn-icon');
+        if (icon) icon.className = 'fas fa-user-plus';
+        const wrap = document.getElementById('auth-confirm-wrap');
+        if (wrap) wrap.style.display = 'block';
+        enterRegisterOtpGate();
+    } else {
+        document.getElementById('auth-subtitle').textContent = 'Hisobingizga kiring';
+        document.getElementById('auth-btn-text').textContent = 'Kirish';
+        const icon = document.getElementById('auth-btn-icon');
+        if (icon) icon.className = 'fas fa-lock';
+        const wrap = document.getElementById('auth-confirm-wrap');
+        if (wrap) wrap.style.display = 'none';
+        const otpForm = document.getElementById('auth-otp-form');
+        const manualForm = document.getElementById('auth-manual-form');
+        if (otpForm) otpForm.style.display = 'none';
+        if (manualForm) manualForm.style.display = 'flex';
+    }
 }
 
 function showAuthError(msg) {
