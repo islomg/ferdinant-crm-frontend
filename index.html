@@ -3311,13 +3311,14 @@
                 return nameA.localeCompare(nameB, "uz");
             });
 
-            // --- Stil sozlamalari (och/yorqin ranglar, toq/quyuq rang yo'q) ---
-            const HEADER_FILL = "4F81BD";   // yorqin ko'k
-            const HEADER_FONT = "FFFFFF";
-            const ROW_FILL_A = "DCE6F1";    // och ko'k
-            const ROW_FILL_B = "E5F1DE";    // och yashil
-            const TOTAL_FILL = "FDE9A9";    // och sariq/oltin
-            const BORDER_COLOR = "B7B7B7";
+            // --- Stil sozlamalari (faqat och/yorqin ranglar, to'q rang yo'q) ---
+            const HEADER_FILL = "BDD7EE";   // och ko'k (header)
+            const HEADER_FONT = "1F4E78";   // to'q ko'k matn (o'qilishi uchun)
+            const NUM_FILL = "DCE6F1";      // och ko'k (tartib raqam ustuni)
+            const NUM_FONT = "1F4E78";
+            const BODY_FILL = "FCE4D6";     // och to'q rangli tana qatorlari
+            const TOTAL_FILL = "F8CBAD";    // "Jami" qatori uchun biroz to'yinganroq to'q
+            const BORDER_COLOR = "C9C9C9";
 
             const thinBorder = {
                 top: { style: "thin", color: { rgb: BORDER_COLOR } },
@@ -3334,7 +3335,7 @@
             };
 
             const cellStyle = (fillColor, opts = {}) => ({
-                font: { sz: 11, bold: !!opts.bold },
+                font: { sz: 11, bold: !!opts.bold, color: { rgb: opts.fontColor || "000000" } },
                 fill: { fgColor: { rgb: fillColor } },
                 alignment: { horizontal: opts.align || "left", vertical: "center" },
                 border: thinBorder
@@ -3366,18 +3367,21 @@
                     const addr = XLSX.utils.encode_cell({ r: R, c: C });
                     if (!worksheet[addr]) continue;
 
+                    const align = C === 1 ? "left" : (C === 0 ? "center" : (C === 2 ? "right" : "center"));
+
                     if (R === 0) {
                         worksheet[addr].s = headerStyle;
+                    } else if (C === 0) {
+                        // Tartib raqam ustuni - doim ko'k
+                        worksheet[addr].s = cellStyle(NUM_FILL, {
+                            align: "center",
+                            bold: R === totalRowIndex,
+                            fontColor: NUM_FONT
+                        });
                     } else if (R === totalRowIndex) {
-                        worksheet[addr].s = cellStyle(TOTAL_FILL, {
-                            bold: true,
-                            align: C === 1 ? "left" : (C === 0 ? "center" : "right")
-                        });
+                        worksheet[addr].s = cellStyle(TOTAL_FILL, { bold: true, align });
                     } else {
-                        const zebra = (R % 2 === 1) ? ROW_FILL_A : ROW_FILL_B;
-                        worksheet[addr].s = cellStyle(zebra, {
-                            align: C === 1 ? "left" : (C === 0 ? "center" : (C === 2 ? "right" : "center"))
-                        });
+                        worksheet[addr].s = cellStyle(BODY_FILL, { align });
                     }
                 }
             }
