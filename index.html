@@ -1268,6 +1268,21 @@
                 display: none;
             }
 
+            .btn-telegram-warn {
+                width: 38px;
+                height: 38px;
+                padding: 0;
+                gap: 0;
+                justify-content: center;
+                align-items: center;
+                border-radius: 8px;
+                font-size: 16px;
+            }
+
+            .btn-telegram-warn i {
+                margin: 0;
+            }
+
 
 
             .topbar-title {
@@ -3082,7 +3097,7 @@
                 content.innerHTML = `
             <div class="filter-bar">
                 <input id="d-search" placeholder="🔍 Ism bo'yicha izlash..." style="flex:1;min-width:120px">
-                <button class="btn btn-primary" style="flex-shrink:0" onclick="openModal('telegram-warn-modal')">
+                <button class="btn btn-primary btn-telegram-warn" style="flex-shrink:0" onclick="openModal('telegram-warn-modal')" title="Ogohlantirish yuborish">
     <i class="fab fa-telegram"></i> <span class="add-student-label">Ogohlantirish yuborish</span>
 </button>
             </div>
