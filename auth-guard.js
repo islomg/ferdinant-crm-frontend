@@ -645,6 +645,15 @@ async function finishLogin(user) {
         if (meRes.ok) setCurrentUserData(meRes.data);
     }
 
+    // MUHIM: sahifa birinchi ochilganda (hali login qilinmagan holatda)
+    // index.html pastidagi loadData() chaqiruvi cookie yo'qligi sabab
+    // muvaffaqiyatsiz/bo'sh qaytgan bo'ladi. Endi sessiya tasdiqlangach,
+    // dashboard ma'lumotlarini shu yerda qayta yuklaymiz — aks holda
+    // foydalanuvchi qo'lda sahifani yangilashga majbur bo'lardi.
+    if (typeof loadData === 'function') {
+        loadData().catch(() => {});
+    }
+
     const card = document.getElementById('auth-card');
     if (card) {
         card.innerHTML = `
@@ -662,7 +671,7 @@ async function finishLogin(user) {
         if (overlay) overlay.remove();
         document.documentElement.style.overflow = '';
         addTopbarButtons();
-    }, 900);
+    }, 500);
 }
 
 function toggleAuthPass() {
@@ -1038,8 +1047,8 @@ async function deleteUserFromPage(userId) {
         }
     };
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => setTimeout(init, 300));
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-        setTimeout(init, 300);
+        init();
     }
 })();
