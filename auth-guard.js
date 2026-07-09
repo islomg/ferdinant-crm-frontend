@@ -2,7 +2,128 @@
 const API_BASE = 'https://web-production-1275f.up.railway.app/api';
 
 // ===================== O'NG TUGMA VA DEVTOOLS TUGMALARINI CHEKLASH =====================
-document.addEventListener('contextmenu', e => e.preventDefault());
+// ESLATMA: bu faqat oddiy foydalanuvchini chalg'itadi, haqiqiy himoya emas —
+// DevTools'ni boshqa yo'llar bilan (brauzer menyusi va h.k.) ochish mumkin.
+// ===================== MAXSUS CONTEXT MENU (o'ng tugma) =====================
+// Standart brauzer menyusi (va undagi "Inspect" kabi bandlar) o'rniga,
+// saytning o'z dizayniga mos, xavfsiz buyruqlar (nusxalash, yangilash va h.k.)
+// bilan cheklangan menyu ko'rsatiladi.
+(function setupCustomContextMenu() {
+    const style = document.createElement('style');
+    style.textContent = `
+        #ferdinant-ctx-menu {
+            position: fixed;
+            z-index: 999999;
+            min-width: 190px;
+            padding: 6px;
+            background: var(--bg3, #111827);
+            border: 1px solid var(--border2, rgba(255,255,255,0.12));
+            border-radius: var(--radius, 12px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.5);
+            font-family: var(--font, 'Geist', -apple-system, sans-serif);
+            backdrop-filter: blur(8px);
+            display: none;
+        }
+        #ferdinant-ctx-menu.open { display: block; }
+        #ferdinant-ctx-menu .ctx-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 9px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            color: var(--text1, #f1f5f9);
+            cursor: pointer;
+            user-select: none;
+            transition: background .12s ease;
+        }
+        #ferdinant-ctx-menu .ctx-item:hover { background: var(--accent, #3b82f6); }
+        #ferdinant-ctx-menu .ctx-item.disabled {
+            color: var(--text3, #475569);
+            cursor: default;
+            pointer-events: none;
+        }
+        #ferdinant-ctx-menu .ctx-sep {
+            height: 1px;
+            margin: 6px 4px;
+            background: var(--border, rgba(255,255,255,0.06));
+        }
+        #ferdinant-ctx-menu .ctx-item i { width: 14px; text-align: center; font-size: 12px; opacity: .8; }
+    `;
+    document.head.appendChild(style);
+
+    const menu = document.createElement('div');
+    menu.id = 'ferdinant-ctx-menu';
+    document.body.appendChild(menu);
+
+    function closeMenu() {
+        menu.classList.remove('open');
+    }
+
+    function buildItems() {
+        const hasSelection = (window.getSelection()?.toString() || '').length > 0;
+        const items = [
+            {
+                label: 'Nusxalash',
+                icon: 'fa-copy',
+                disabled: !hasSelection,
+                action: () => document.execCommand('copy'),
+            },
+            {
+                label: 'Hammasini tanlash',
+                icon: 'fa-object-group',
+                action: () => {
+                    const range = document.createRange();
+                    range.selectNodeContents(document.body);
+                    const sel = window.getSelection();
+                    sel.removeAllRanges();
+                    sel.addRange(range);
+                },
+            },
+            { sep: true },
+            {
+                label: 'Sahifani yangilash',
+                icon: 'fa-rotate-right',
+                action: () => location.reload(),
+            },
+        ];
+        menu.innerHTML = '';
+        items.forEach(item => {
+            if (item.sep) {
+                const sep = document.createElement('div');
+                sep.className = 'ctx-sep';
+                menu.appendChild(sep);
+                return;
+            }
+            const el = document.createElement('div');
+            el.className = 'ctx-item' + (item.disabled ? ' disabled' : '');
+            el.innerHTML = `<i class="fas ${item.icon}"></i><span>${item.label}</span>`;
+            el.addEventListener('click', () => {
+                if (!item.disabled) item.action();
+                closeMenu();
+            });
+            menu.appendChild(el);
+        });
+    }
+
+    document.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        buildItems();
+        menu.classList.add('open');
+
+        const menuWidth = 200, menuHeight = menu.offsetHeight || 140;
+        let x = e.clientX, y = e.clientY;
+        if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 8;
+        if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 8;
+        menu.style.left = `${x}px`;
+        menu.style.top = `${y}px`;
+    });
+
+    document.addEventListener('click', closeMenu);
+    document.addEventListener('scroll', closeMenu, true);
+    window.addEventListener('resize', closeMenu);
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+})();
 
 document.addEventListener('keydown', e => {
     const key = e.key;
