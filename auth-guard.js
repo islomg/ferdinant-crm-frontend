@@ -1,5 +1,18 @@
 // ===================== AUTH GUARD — BACKEND VERSION =====================
 const API_BASE = 'https://web-production-1275f.up.railway.app/api';
+
+// ===================== O'NG TUGMA VA DEVTOOLS TUGMALARINI CHEKLASH =====================
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+document.addEventListener('keydown', e => {
+    const key = e.key;
+    const isF12 = key === 'F12';
+    const isInspect = e.ctrlKey && e.shiftKey && (key === 'I' || key === 'i' || key === 'J' || key === 'j' || key === 'C' || key === 'c');
+    const isViewSource = e.ctrlKey && (key === 'U' || key === 'u');
+    if (isF12 || isInspect || isViewSource) {
+        e.preventDefault();
+    }
+});
 const AUTH_TOKEN_KEY = 'crm_auth_token';
 const DEVICE_ID_KEY = 'crm_device_id';
 const CURRENT_USER_KEY = 'crm_current_user_data';
