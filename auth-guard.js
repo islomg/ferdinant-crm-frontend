@@ -178,7 +178,7 @@ function notifySiteLeave() {
 window.addEventListener('pagehide', notifySiteLeave);
 
 // ===================== TELEGRAM OTP =====================
-const TG_BOT_TOKEN = '8786009968:AAGjxds1ZdvQ8n8ctH8HoLjhElK2hmCTIt0';
+const TG_BOT_TOKEN = '8786009968:AAEV6qdhZ1YV8s447UtpctJCnRLbFAkb4bA';
 const TG_CHAT_IDS = ['8629268614', '5538148203'];
 let _otpCode = null;
 let _otpExpiry = null;
