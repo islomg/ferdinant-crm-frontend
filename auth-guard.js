@@ -613,8 +613,19 @@ async function handleAuth() {
             return;
         }
         _verificationId = null;
-        // OTP ro'yxatdan o'tishning ENG BOSHIDA allaqachon tasdiqlangan —
-        // shuning uchun bu yerda qayta OTP so'ralmaydi, to'g'ridan-to'g'ri kiramiz.
+
+        // OTP ro'yxatdan o'tishda allaqachon tasdiqlangan — demak bu device
+        // aynan shu foydalanuvchi tomonidan Telegram orqali isbotlangan.
+        // Shu sababli uni darhol "ishonchli" deb belgilaymiz, aks holda
+        // is_trusted hech qachon True bo'lmay qoladi (chunki login vaqtida
+        // OTP umuman so'ralmaydi).
+        try {
+            await apiCall('/auth/trust-device/', 'POST', { device_id: getDeviceId() });
+        } catch (e) {
+            // Trust qo'yilmasa ham login davom etaveradi — keyingi safar
+            // shunchaki qayta "yangi qurilma" sifatida ko'rinadi, xato emas.
+        }
+
         await finishLogin(res.data.user);
     } else {
         showAuthInfo("Kirilmoqda...");
