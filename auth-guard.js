@@ -142,7 +142,6 @@ document.addEventListener('keydown', e => {
         e.preventDefault();
     }
 });
-const AUTH_TOKEN_KEY = 'crm_auth_token';
 const DEVICE_ID_KEY = 'crm_device_id';
 const CURRENT_USER_KEY = 'crm_current_user_data';
 
@@ -157,18 +156,15 @@ function getDeviceId() {
 }
 
 // ===================== TOKEN =====================
-function getToken() {
-    return localStorage.getItem(AUTH_TOKEN_KEY) || '';
-}
-function setToken(token) {
-    localStorage.setItem(AUTH_TOKEN_KEY, token);
-}
-function clearToken() {
-    localStorage.removeItem(AUTH_TOKEN_KEY);
+// MUHIM: token endi bu yerda umuman saqlanmaydi/o'qilmaydi. Login/register
+// muvaffaqiyatli bo'lganda backend httpOnly cookie o'rnatadi (Set-Cookie),
+// undan keyin brauzer har bir so'rovga uni avtomatik qo'shadi (apiCall'dagi
+// `credentials: 'include'` tufayli). JS token qiymatini hech qachon ko'rmaydi,
+// shuning uchun XSS orqali ham uni o'qib/o'g'irlab bo'lmaydi.
+// Sessiya bor-yo'qligini `/auth/me/` so'rovi natijasi orqali bilamiz
+// (pastdagi asosiy tekshiruv bloqiga qarang).
+function clearLocalSessionData() {
     localStorage.removeItem(CURRENT_USER_KEY);
-}
-function isSessionValid() {
-    return !!getToken();
 }
 
 // ===================== CURRENT USER =====================
@@ -253,9 +249,10 @@ function showAlert(message, type = 'info', title = null) {
 // ===================== API CALL =====================
 async function apiCall(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
-    const token = getToken();
-    if (token) headers['Authorization'] = `Bearer ${token}`;
-    const opts = { method, headers };
+    // `credentials: 'include'` — httpOnly sessiya cookie'sini backend (boshqa
+    // domen: Railway) ga avtomatik yuboradi/qabul qiladi. Token JS kodida
+    // hech qachon ko'rinmaydi.
+    const opts = { method, headers, credentials: 'include' };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(`${API_BASE}${endpoint}`, opts);
     const data = await res.json();
@@ -268,8 +265,9 @@ async function logout() {
     // "saytdan chiqdi" xabari qayta yuborilmasin (auth_logout o'zi allaqachon
     // "Tizimdan chiqish" xabarini yuboradi).
     window.__ferdinantIntentionalLogout = true;
+    // Backend shu so'rov davomida cookie'ni o'chiradi (Set-Cookie bilan expire).
     try { await apiCall('/auth/logout/', 'POST'); } catch (e) {}
-    clearToken();
+    clearLocalSessionData();
     location.reload();
 }
 
@@ -282,29 +280,19 @@ function notifySiteEnter() {
 
 // Brauzer/tab yopilganda yoki sahifadan chiqib ketilganda ishonchli
 // yetkazish uchun navigator.sendBeacon ishlatiladi (fetch bu paytda
-// tugallanmasligi mumkin). sendBeacon Authorization header qo'sha
-// olmagani uchun token so'rov tanasida yuboriladi.
+// tugallanmasligi mumkin). Token endi JS kodida yo'q — sessiya cookie'si
+// SameSite=None bo'lgani uchun brauzer uni cross-site so'rovga ham
+// avtomatik qo'shadi, shuning uchun uni qo'lda body'ga solish shart emas.
 function notifySiteLeave() {
     if (window.__ferdinantIntentionalLogout) return; // logout() o'zi xabar yuboradi
-    const token = getToken();
-    if (!token) return;
     const url = `${API_BASE}/auth/site-leave/`;
     try {
-        // MUHIM: Blob'ga 'application/json' turi berilsa, bu cross-origin
-        // (frontend Netlify, backend Railway) so'rov CORS preflight talab
-        // qiladi — lekin sendBeacon preflight'ni UMUMAN qo'llamaydi, shu sabab
-        // brauzer so'rovni jo'natmay bekor qilardi ("kirdi" xabari kelib,
-        // "chiqdi" kelmasligining sababi shu edi). 'application/x-www-form-
-        // urlencoded' esa CORS-safelisted bo'lgani uchun preflight'siz ketadi.
-        const params = new URLSearchParams();
-        params.set('token', token);
-        const ok = navigator.sendBeacon(url, params);
+        const ok = navigator.sendBeacon(url);
         if (!ok && window.fetch) {
             // sendBeacon navbatga qo'yolmasa — fetch(keepalive) bilan urinib ko'ramiz
             fetch(url, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: params.toString(),
+                credentials: 'include',
                 keepalive: true,
             }).catch(() => {});
         }
@@ -627,7 +615,7 @@ async function handleAuth() {
         _verificationId = null;
         // OTP ro'yxatdan o'tishning ENG BOSHIDA allaqachon tasdiqlangan —
         // shuning uchun bu yerda qayta OTP so'ralmaydi, to'g'ridan-to'g'ri kiramiz.
-        await finishLogin(res.data.token, res.data.user);
+        await finishLogin(res.data.user);
     } else {
         showAuthInfo("Kirilmoqda...");
         const res = await apiCall('/auth/login/', 'POST', {
@@ -640,14 +628,16 @@ async function handleAuth() {
             return;
         }
         // Login qilishda OTP UMUMAN so'ralmaydi — parol to'g'ri bo'lsa, darhol kiramiz.
-        await finishLogin(res.data.token, res.data.user);
+        await finishLogin(res.data.user);
     }
     if (btn) btn.disabled = false;
 }
 
-// Muvaffaqiyatli autentifikatsiyadan keyin token/foydalanuvchini saqlab, overlayni yopadi.
-async function finishLogin(token, user) {
-    setToken(token);
+// Muvaffaqiyatli autentifikatsiyadan keyin foydalanuvchi ma'lumotini saqlab,
+// overlayni yopadi. Sessiya cookie'si login/register javobi bilan birga
+// brauzer tomonidan avtomatik o'rnatiladi (Set-Cookie) — bu yerda token bilan
+// ishlashning hojati yo'q.
+async function finishLogin(user) {
     if (user) {
         setCurrentUserData(user);
     } else {
@@ -1031,31 +1021,25 @@ async function deleteUserFromPage(userId) {
 }
 
 // ===================== ASOSIY TEKSHIRISH =====================
+// Token endi httpOnly cookie'da — JS uni o'qiy olmaydi, shuning uchun
+// sessiya bor-yo'qligini faqat serverga so'rov yuborib (/auth/me/,
+// cookie avtomatik biriktiriladi) bilib olamiz.
 (function () {
-    if (!isSessionValid()) {
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', showLoginPage);
+    const init = async () => {
+        const res = await apiCall('/auth/me/');
+        if (res.ok) {
+            setCurrentUserData(res.data);
+            addTopbarButtons();
+            notifySiteEnter(); // cookie orqali avtomatik kirdi — botga xabar
         } else {
+            // Cookie yo'q/eskirgan/noto'g'ri — qayta login
+            clearLocalSessionData();
             showLoginPage();
         }
+    };
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(init, 300));
     } else {
-        // Token bor — serverda tekshirish
-        const init = async () => {
-            const res = await apiCall('/auth/me/');
-            if (res.ok) {
-                setCurrentUserData(res.data);
-                addTopbarButtons();
-                notifySiteEnter(); // token orqali avtomatik kirdi — botga xabar
-            } else {
-                // Token eskirgan yoki noto'g'ri — qayta login
-                clearToken();
-                showLoginPage();
-            }
-        };
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', () => setTimeout(init, 300));
-        } else {
-            setTimeout(init, 300);
-        }
+        setTimeout(init, 300);
     }
 })();

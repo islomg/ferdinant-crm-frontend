@@ -1964,21 +1964,20 @@
         // ===================== API KONFIGURATSIYA =====================
         const API_URL = 'https://web-production-1275f.up.railway.app/api';
 
-        // Har bir API so'roviga avtomatik "Authorization: Bearer <token>" qo'shib beradi.
-        // Bu orqali kod ichida har bir fetch() chaqiruviga alohida token qo'shishni
-        // unutib qo'yish tufayli backendda 400/401 xatoliklar chiqishining oldi olinadi.
-        (function patchFetchWithAuth() {
+        // Har bir API so'roviga avtomatik sessiya cookie'sini biriktiradi
+        // (credentials: 'include'). Token endi httpOnly cookie'da saqlanadi —
+        // JS uni o'qiy olmaydi/qo'lda header sifatida qo'sha olmaydi, va shunga
+        // hojat ham yo'q: cookie brauzer tomonidan avtomatik yuboriladi.
+        // Eski kod ichida hali ham uchraydigan `getToken()` chaqiruvlari endi
+        // mavjud emas — shu sabab bu global patch ularning barchasini
+        // qo'shimcha o'zgartirishsiz "to'g'irlab" beradi.
+        (function patchFetchWithCredentials() {
             const originalFetch = window.fetch;
             window.fetch = function (input, init) {
                 const url = typeof input === "string" ? input : (input && input.url) || "";
                 if (url.startsWith(API_URL)) {
                     init = init || {};
-                    const headers = new Headers(init.headers || (typeof input !== "string" ? input.headers : undefined) || {});
-                    if (!headers.has("Authorization")) {
-                        const token = (typeof getToken === "function") ? getToken() : "";
-                        if (token) headers.set("Authorization", `Bearer ${token}`);
-                    }
-                    init.headers = headers;
+                    if (!init.credentials) init.credentials = "include";
                 }
                 return originalFetch(input, init);
             };
@@ -2194,8 +2193,7 @@
             try {
 
                 const headers = {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${getToken()}`
+                    "Content-Type": "application/json"
                 };
 
                 const [groupsRes, studentsRes, paymentsRes, trashRes] = await Promise.all([
@@ -2241,8 +2239,7 @@
         async function checkNewMonthDebts() {
 
             const headers = {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${getToken()}`
+                "Content-Type": "application/json"
             };
 
             const currentPeriod =
@@ -2586,9 +2583,7 @@
             let ownerGroups = groups;
             if (ownerId && currentUserData && ownerId !== currentUserData.id) {
                 try {
-                    const res = await fetch(`${API_URL}/groups/?owner_id=${ownerId}`, {
-                        headers: { "Authorization": `Bearer ${getToken()}` }
-                    });
+                    const res = await fetch(`${API_URL}/groups/?owner_id=${ownerId}`);
                     ownerGroups = res.ok ? await res.json() : [];
                 } catch (e) {
                     ownerGroups = [];
@@ -2642,8 +2637,7 @@
             };
 
             const headers = {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${getToken()}`
+                "Content-Type": "application/json"
             };
 
             if (editGroupId) {
