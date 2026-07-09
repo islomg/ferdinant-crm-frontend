@@ -144,6 +144,7 @@ document.addEventListener('keydown', e => {
 });
 const DEVICE_ID_KEY = 'crm_device_id';
 const CURRENT_USER_KEY = 'crm_current_user_data';
+const TOKEN_KEY = 'crm_auth_token';
 
 // ===================== DEVICE ID =====================
 function getDeviceId() {
@@ -165,6 +166,13 @@ function getDeviceId() {
 // (pastdagi asosiy tekshiruv bloqiga qarang).
 function clearLocalSessionData() {
     localStorage.removeItem(CURRENT_USER_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+}
+function getStoredToken() {
+    return localStorage.getItem(TOKEN_KEY) || '';
+}
+function setStoredToken(token) {
+    if (token) localStorage.setItem(TOKEN_KEY, token);
 }
 
 // ===================== CURRENT USER =====================
@@ -249,9 +257,8 @@ function showAlert(message, type = 'info', title = null) {
 // ===================== API CALL =====================
 async function apiCall(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
-    // `credentials: 'include'` — httpOnly sessiya cookie'sini backend (boshqa
-    // domen: Railway) ga avtomatik yuboradi/qabul qiladi. Token JS kodida
-    // hech qachon ko'rinmaydi.
+    const token = getStoredToken();
+    if (token) headers['Authorization'] = `Bearer ${token}`;
     const opts = { method, headers, credentials: 'include' };
     if (body) opts.body = JSON.stringify(body);
     const res = await fetch(`${API_BASE}${endpoint}`, opts);
@@ -625,7 +632,7 @@ async function handleAuth() {
             // Trust qo'yilmasa ham login davom etaveradi — keyingi safar
             // shunchaki qayta "yangi qurilma" sifatida ko'rinadi, xato emas.
         }
-
+        if (res.data.token) setStoredToken(res.data.token);
         await finishLogin(res.data.user);
     } else {
         showAuthInfo("Kirilmoqda...");
@@ -639,6 +646,7 @@ async function handleAuth() {
             return;
         }
         // Login qilishda OTP UMUMAN so'ralmaydi — parol to'g'ri bo'lsa, darhol kiramiz.
+        if (res.data.token) setStoredToken(res.data.token);
         await finishLogin(res.data.user);
     }
     if (btn) btn.disabled = false;
