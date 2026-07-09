@@ -3081,10 +3081,10 @@
             if (!document.getElementById("debtors-list")) {
                 content.innerHTML = `
             <div class="filter-bar">
-                <input id="d-search" placeholder="🔍 Ism bo'yicha izlash..." style="flex:1">
-                <button class="btn btn-primary" onclick="openModal('telegram-warn-modal')">
-                    <i class="fab fa-telegram"></i> Ogohlantirish yuborish
-                </button>
+                <input id="d-search" placeholder="🔍 Ism bo'yicha izlash..." style="flex:1;min-width:120px">
+                <button class="btn btn-primary" style="flex-shrink:0" onclick="openModal('telegram-warn-modal')">
+    <i class="fab fa-telegram"></i> <span class="add-student-label">Ogohlantirish yuborish</span>
+</button>
             </div>
             <div class="chart-box" style="margin-bottom:16px">
                 <div class="stat-lbl" style="margin-bottom:6px">Jami qarzdorlik</div>
