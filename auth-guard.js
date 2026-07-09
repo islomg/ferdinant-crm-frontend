@@ -9,6 +9,7 @@ const API_BASE = 'https://web-production-1275f.up.railway.app/api';
 // saytning o'z dizayniga mos, xavfsiz buyruqlar (nusxalash, yangilash va h.k.)
 // bilan cheklangan menyu ko'rsatiladi.
 (function setupCustomContextMenu() {
+    function init() {
     const style = document.createElement('style');
     style.textContent = `
         #ferdinant-ctx-menu {
@@ -123,6 +124,13 @@ const API_BASE = 'https://web-production-1275f.up.railway.app/api';
     document.addEventListener('scroll', closeMenu, true);
     window.addEventListener('resize', closeMenu);
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeMenu(); });
+    } // init() tugadi
+
+    if (document.body) {
+        init();
+    } else {
+        document.addEventListener('DOMContentLoaded', init);
+    }
 })();
 
 document.addEventListener('keydown', e => {
