@@ -4199,29 +4199,21 @@
             }
         }
 
-        const BOT_TOKEN = "8786009968:AAGjxds1ZdvQ8n8ctH8HoLjhElK2hmCTIt0";
-        const CHAT_IDS = ["8629268614", "5538148203"];
-
         async function sendTelegramResult(name, score, total) {
             const testName = activeTest ? activeTest.name : "Test";
-            const message = `📢 ${testName}\n👤 Ism: ${name}\n✅ To\'g\'ri javoblar: ${score}/${total}\n📅 Sana: ${new Date().toLocaleString()}`;
-
-            const results = [];
-            for (const chatId of CHAT_IDS) {
-                try {
-                    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" },
-                        body: JSON.stringify({ chat_id: chatId, text: message })
-                    });
-                    const data = await res.json();
-                    console.log("Telegram response:", chatId, data);
-                    results.push(data);
-                } catch (e) {
-                    console.error("Telegram xatolik:", chatId, e);
-                }
+            try {
+                const res = await fetch(`${API_URL}/telegram/send-quiz-result/`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ test_name: testName, name, score, total })
+                });
+                const data = await res.json();
+                console.log("Telegram (backend orqali):", data);
+                return [data];
+            } catch (e) {
+                console.error("Telegram xatolik:", e);
+                return [];
             }
-            return results;
         }
 
         let pendingScore = 0, pendingTotal = 0;
@@ -4781,11 +4773,11 @@
                     const pdfBytesFinal = await pdfDoc.save();
                     const file = new Blob([pdfBytesFinal], { type: "application/pdf" });
                     const formData = new FormData();
-                    formData.append("chat_id", ['8629268614', '5538148203']);
-                    formData.append("caption", `🎓 Sertifikat: ${name}\n📘 Kurs: ${course}`);
+                    formData.append("name", name);
+                    formData.append("course", course);
                     formData.append("document", file, "sertifikat.pdf");
 
-                    await axios.post(`https://api.telegram.org/bot${BOT_TOKEN}/sendDocument`, formData);
+                    await axios.post(`${API_URL}/telegram/send-certificate/`, formData);
 
                     const finalMsg = "✅ Sertifikatingiz yaratildi va bizga yuborildi.\n📩 Uni olish uchun iltimos, biz bilan bog'laning.";
                     statusDiv.innerText = finalMsg;

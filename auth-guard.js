@@ -177,37 +177,29 @@ function notifySiteLeave() {
 // sahifadan boshqa manzilga o'tilganda yoki reload qilinganda ishga tushadi.
 window.addEventListener('pagehide', notifySiteLeave);
 
-// ===================== TELEGRAM OTP =====================
-const TG_BOT_TOKEN = '8786009968:AAEV6qdhZ1YV8s447UtpctJCnRLbFAkb4bA';
-const TG_CHAT_IDS = ['8629268614', '5538148203'];
-let _otpCode = null;
-let _otpExpiry = null;
+// ===================== TELEGRAM OTP (BACKENDDA TEKSHIRILADI) =====================
+// Kod endi bu yerda saqlanmaydi va tekshirilmaydi — bu funksiyalar faqat
+// backend'dagi /auth/send-otp/ va /auth/verify-otp/ endpointlariga murojaat qiladi.
+// Shu tufayli konsol orqali kodni ko'rish yoki tekshiruvni chetlab o'tish mumkin emas.
+let _verificationId = null;
 
 async function sendTelegramOtp(username) {
-    _otpCode = String(Math.floor(1000 + Math.random() * 9000));
-    _otpExpiry = Date.now() + 5 * 60 * 1000;
-    const whoLine = username ? `Foydalanuvchi: \`${username}\`\n` : `Yangi foydalanuvchi ro'yxatdan o'tmoqda.\n`;
-    const text = `🔐 *FerdinantEduCRM — Tasdiqlash kodi*\n\n${whoLine}Kod: *${_otpCode}*\n\n⏱ Kod 5 daqiqa ichida amal qiladi.`;
-    let ok = false;
-    for (const chatId of TG_CHAT_IDS) {
-        try {
-            const res = await fetch(`https://api.telegram.org/bot${TG_BOT_TOKEN}/sendMessage`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ chat_id: chatId, text, parse_mode: 'Markdown' })
-            });
-            const d = await res.json();
-            if (d.ok) ok = true;
-        } catch (e) {}
+    const res = await apiCall('/auth/send-otp/', 'POST', { username: username || '' });
+    if (res.ok && res.data.verification_id) {
+        _verificationId = res.data.verification_id;
+        return true;
     }
-    return ok;
+    return false;
 }
 
-function verifyOtp(input) {
-    if (!_otpCode || !_otpExpiry) return 'nocode';
-    if (Date.now() > _otpExpiry) return 'expired';
-    if (input.trim() === _otpCode) return 'ok';
-    return 'wrong';
+async function verifyOtp(input) {
+    if (!_verificationId) return 'nocode';
+    const res = await apiCall('/auth/verify-otp/', 'POST', {
+        verification_id: _verificationId,
+        code: input.trim(),
+    });
+    if (!res.ok) return 'nocode';
+    return res.data.result; // 'ok' | 'wrong' | 'expired' | 'nocode'
 }
 
 // ===================== LOGIN SAHIFASI =====================
@@ -385,6 +377,7 @@ async function enterRegisterOtpGate() {
     // Bu bosqichda hali login/parol so'ralmaydi — shuning uchun username/token yo'q.
     _pendingUsername = null;
     _pendingToken = null;
+    _verificationId = null;
     const manualForm = document.getElementById('auth-manual-form');
     const otpForm = document.getElementById('auth-otp-form');
     if (manualForm) manualForm.style.display = 'none';
@@ -408,11 +401,11 @@ async function handleOtpVerify() {
     if (!input) return;
     const val = input.value.trim();
     if (val.length !== 4) { showAuthError('4 xonali kodni kiriting!'); return; }
-    const result = verifyOtp(val);
+    const result = await verifyOtp(val);
     if (result === 'ok') {
         clearInterval(_otpCountdownInterval);
         clearInterval(_resendCountdownInterval);
-        _otpCode = null;
+        // _verificationId ATAYLAB tozalanmaydi — ro'yxatdan o'tish so'rovida kerak bo'ladi.
 
         // OTP tasdiqlandi — endi ma'lumot to'ldirish oynasi (login/parol) ochiladi.
         // Hisob hali yaratilmagan, shuning uchun bu yerda hech qanday token/login yo'q.
@@ -449,7 +442,7 @@ async function handleOtpResend() {
 function cancelOtp() {
     clearInterval(_otpCountdownInterval);
     clearInterval(_resendCountdownInterval);
-    _otpCode = null; _pendingUsername = null; _pendingToken = null; _otpExpiry = null;
+    _verificationId = null; _pendingUsername = null; _pendingToken = null;
 
     // OTP — ro'yxatdan o'tishning birinchi qadami, shuning uchun bekor qilinsa
     // oddiy kirish (login) shakliga qaytamiz.
@@ -481,7 +474,7 @@ async function handleAuth() {
         if (password.length < 4) { showAuthError("Parol kamida 4 ta belgi bo'lishi kerak!"); if (btn) btn.disabled = false; return; }
         showAuthInfo("Ro'yxatdan o'tilmoqda...");
         const res = await apiCall('/auth/register/', 'POST', {
-            username, password, device_id: getDeviceId()
+            username, password, device_id: getDeviceId(), verification_id: _verificationId
         });
         document.getElementById('auth-info').style.display = 'none';
         if (!res.ok) {
@@ -489,6 +482,7 @@ async function handleAuth() {
             if (btn) btn.disabled = false;
             return;
         }
+        _verificationId = null;
         // OTP ro'yxatdan o'tishning ENG BOSHIDA allaqachon tasdiqlangan —
         // shuning uchun bu yerda qayta OTP so'ralmaydi, to'g'ridan-to'g'ri kiramiz.
         await finishLogin(res.data.token, res.data.user);
