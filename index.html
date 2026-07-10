@@ -1780,6 +1780,7 @@
         <nav id="nav">
             <div class="nav-item active" data-page="dashboard"><i class="fas fa-chart-line"></i> Dashboard</div>
             <div class="nav-item" data-page="groups"><i class="fas fa-layer-group"></i> Guruhlar</div>
+            <div class="nav-item" data-page="courses"><i class="fas fa-graduation-cap"></i> Kurslar</div>
             <div class="nav-item" data-page="students"><i class="fas fa-user-graduate"></i> O'quvchilar</div>
             <div class="nav-item" data-page="payments"><i class="fas fa-credit-card"></i> To'lovlar</div>
             <div class="nav-item" data-page="debtors"><i class="fas fa-user-slash"></i> Qarzdorlar</div>
@@ -1854,6 +1855,24 @@
             <div class="modal-actions">
                 <button class="btn btn-ghost" onclick="closeModal('group-modal')">Bekor</button>
                 <button class="btn btn-primary" onclick="saveGroup()"><i class="fas fa-save"></i> Saqlash</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="course-modal">
+        <div class="modal-box">
+            <div class="modal-title"><i class="fas fa-graduation-cap"></i> <span id="course-modal-title">Yangi kurs</span>
+            </div>
+            <div class="form-group"><label>Kurs nomi *</label><input id="m-coursename"
+                    placeholder="masalan: Ingliz tili A1">
+            </div>
+            <div class="form-group"><label>Egasi (Foydalanuvchi)</label><select id="m-courseuser"></select></div>
+            <div class="form-group"><label>To'lov summasi (so'm)</label><input id="m-courseprice" type="text"
+                    class="money-input">
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal('course-modal')">Bekor</button>
+                <button class="btn btn-primary" onclick="saveCourse()"><i class="fas fa-save"></i> Saqlash</button>
             </div>
         </div>
     </div>
@@ -2094,6 +2113,7 @@
         const COLORS = ["#3b82f6", "#6366f1", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#06b6d4", "#f97316"];
 
         let groups = [];
+        let courses = [];
         let students = [];
         let payments = [];
         let trash = [];
@@ -2109,6 +2129,7 @@
         let currentDebtorPage = 1;
         let groupFilter = "all";
         let editGroupId = null;
+        let editCourseId = null;
         let editStudentId = null;
         let editPaymentId = null;
         let viewingStudentId = null;
@@ -2316,14 +2337,16 @@
                     "Content-Type": "application/json"
                 };
 
-                const [groupsRes, studentsRes, paymentsRes, trashRes] = await Promise.all([
+                const [groupsRes, coursesRes, studentsRes, paymentsRes, trashRes] = await Promise.all([
                     fetch(`${API_URL}/groups/`, { headers }),
+                    fetch(`${API_URL}/courses/`, { headers }),
                     fetch(`${API_URL}/students/`, { headers }),
                     fetch(`${API_URL}/payments/`, { headers }),
                     fetch(`${API_URL}/trash/`, { headers })
                 ]);
 
                 groups = await groupsRes.json();
+                courses = await coursesRes.json();
                 students = await studentsRes.json();
                 payments = await paymentsRes.json();
 
@@ -2451,6 +2474,7 @@
         const pageTitles = {
             dashboard: "Dashboard",
             groups: "Guruhlar",
+            courses: "Kurslar",
             students: "O'quvchilar",
             payments: "To'lovlar",
             debtors: "Qarzdorlar",
@@ -2518,6 +2542,7 @@
             }
             if (currentPage === "dashboard") renderDashboard();
             else if (currentPage === "groups") renderGroups();
+            else if (currentPage === "courses") renderCourses();
             else if (currentPage === "students") renderStudents();
             else if (currentPage === "payments") renderPayments();
             else if (currentPage === "debtors") renderDebtors();
@@ -2668,6 +2693,133 @@
         }
 
         document.addEventListener("click", closeAllDropdowns);
+
+        // ===================== COURSES (KURSLAR) =====================
+        function renderCourses() {
+            document.getElementById("content").innerHTML = `
+            <div class="filter-bar"><button class="btn btn-primary btn-sm" style="margin-left:auto;flex-shrink:0" onclick="openCourseModal()"><i class="fas fa-plus"></i> <span class="add-group-label">Kurs qo'shish</span></button></div>
+        <div class="groups-grid">${courses.map(c => {
+                return `<div class="group-card" style="cursor:default">
+                        <div class="group-card-head">
+                            <div>
+                                <div style="font-weight:700">${c.name}</div>
+                            </div>
+                            <div class="dd-wrap" onclick="event.stopPropagation()">
+                                <button class="btn btn-ghost btn-sm dd-toggle-course-btn" data-course-id="${c.id}">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="group-card-body">
+                            <div class="group-meta"><i class="fas fa-money-bill-wave"></i>${fmtFull(c.price)} so'm</div>
+                        </div>
+                    </div>`;
+            }).join("")}</div>
+        ${courses.length === 0 ? `<div class="empty"><i class="fas fa-graduation-cap"></i><p>Hali kurs qo'shilmagan</p></div>` : ""}`;
+            document.querySelectorAll(".dd-toggle-course-btn").forEach(btn => {
+                btn.addEventListener("click", (e) => {
+                    e.stopPropagation();
+                    toggleCourseDD(e, btn.dataset.courseId);
+                });
+            });
+        }
+
+        function toggleCourseDD(e, id) {
+            e.stopPropagation();
+            const wasOpen = document.querySelector(`.dd-menu[data-owner="course-${id}"]`);
+            closeAllDropdowns();
+            if (wasOpen) return; // ikkinchi bosishda yopilsin
+
+            const btn = e.currentTarget;
+            const rect = btn.getBoundingClientRect();
+            const menu = document.createElement("div");
+            menu.className = "dd-menu";
+            menu.dataset.owner = `course-${id}`;
+            menu.style.position = "fixed";
+            menu.style.top = (rect.bottom + 6) + "px";
+            menu.style.right = (window.innerWidth - rect.right) + "px";
+            menu.innerHTML = `
+                <button class="dd-item" onclick="openCourseModal(${id})"><i class="fas fa-edit"></i> Tahrirlash</button>
+                <button class="dd-item red" onclick="deleteCourse(${id})"><i class="fas fa-trash"></i> O'chirish</button>
+            `;
+            document.body.appendChild(menu);
+        }
+
+        function openCourseModal(id = null) {
+            editCourseId = id;
+            const c = id ? courses.find(cr => cr.id === id) : null;
+            document.getElementById("course-modal-title").textContent = c ? "Kursni tahrirlash" : "Yangi kurs";
+            document.getElementById("m-coursename").value = c?.name || "";
+            setMoneyVal("m-courseprice", c?.price || 500000);
+            populateUserSelect("m-courseuser", c?.user ?? null);
+            openModal("course-modal");
+        }
+
+        async function saveCourse() {
+            const name = document.getElementById("m-coursename").value.trim();
+
+            if (!name) {
+                return toast("Kurs nomi kiritilishi shart!", "error");
+            }
+
+            const ownerId = parseInt(document.getElementById("m-courseuser").value) || null;
+
+            const data = {
+                name,
+                price: getMoneyVal("m-courseprice"),
+                user: ownerId
+            };
+
+            const headers = {
+                "Content-Type": "application/json"
+            };
+
+            if (editCourseId) {
+
+                const res = await fetch(
+                    `${API_URL}/courses/${editCourseId}/`,
+                    {
+                        method: "PUT",
+                        headers,
+                        body: JSON.stringify(data)
+                    }
+                );
+
+                if (res.ok) {
+                    toast(`"${name}" kursi tahrirlandi`);
+                } else {
+                    toast("Kursni tahrirlashda xatolik!", "error");
+                }
+
+            } else {
+
+                const res = await fetch(
+                    `${API_URL}/courses/`,
+                    {
+                        method: "POST",
+                        headers,
+                        body: JSON.stringify(data)
+                    }
+                );
+
+                if (res.ok) {
+                    toast(`"${name}" kursi qo'shildi`);
+                } else {
+                    toast("Kurs qo'shishda xatolik!", "error");
+                }
+            }
+
+            closeModal("course-modal");
+            await loadData();
+        }
+
+        async function deleteCourse(id) {
+            if (!(await showConfirm("Kurs o'chirilsinmi?"))) return;
+            const c = courses.find(x => x.id === id);
+            await fetch(`${API_URL}/courses/${id}/`, { method: 'DELETE' });
+            toast(`"${c?.name || "Kurs"}" o'chirildi`);
+            await loadData();
+        }
 
         // ===================== FOYDALANUVCHI (EGASI) TANLASH =====================
         // Tizimdagi barcha login qilingan foydalanuvchilarni yuklaydi — guruh/o'quvchi
