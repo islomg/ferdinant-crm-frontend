@@ -2869,17 +2869,21 @@
         }
 
         function populateCourseSelect(selectedName = "") {
-            const sel = document.getElementById("m-gcourse");
-            if (!sel) return;
-            if (courses.length === 0) {
-                sel.innerHTML = `<option value="">Kurslar mavjud emas</option>`;
-                return;
-            }
-            sel.innerHTML = courses.map(c =>
-                `<option value="${c.name}" ${c.name === selectedName ? "selected" : ""}>${c.name}</option>`
-            ).join("");
-            if (!selectedName) sel.value = courses[0].name;
-        }
+    const sel = document.getElementById("m-gcourse");
+    if (!sel) return;
+    if (courses.length === 0) {
+        sel.innerHTML = `<option value="">Kurslar mavjud emas</option>`;
+        return;
+    }
+    sel.innerHTML = courses.map(c =>
+        `<option value="${c.name}" data-price="${c.price || 0}" ${c.name === selectedName ? "selected" : ""}>${c.name}</option>`
+    ).join("");
+    if (!selectedName) sel.value = courses[0].name;
+    sel.onchange = () => {
+        const course = courses.find(c => c.name === sel.value);
+        if (course) setMoneyVal("m-gprice", course.price || 0);
+    };
+}
 
         function openGroupModal(id = null) {
             editGroupId = id;
@@ -2891,7 +2895,12 @@
             populateCourseSelect(g?.course_type || "");
             document.getElementById("m-gteacher").value = g?.teacher || "";
             document.getElementById("m-gmax").value = g?.max_students || 17;
-            setMoneyVal("m-gprice", g?.price || 500000);
+            if (g) {
+    setMoneyVal("m-gprice", g.price || 500000);
+} else {
+    const selectedCourse = courses.find(c => c.name === document.getElementById("m-gcourse").value);
+    setMoneyVal("m-gprice", selectedCourse?.price || 500000);
+}
             populateUserSelect("m-guser", g?.user ?? null);
             openModal("group-modal");
         }
