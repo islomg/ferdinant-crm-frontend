@@ -991,7 +991,7 @@
 
         .toast-container {
             position: fixed;
-            bottom: 20px;
+            top: 20px;
             right: 20px;
             left: auto;
             transform: none;
@@ -1010,17 +1010,13 @@
             font-size: 13px;
             margin-bottom: 0;
             box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
-            animation: toastIn .2s ease;
-        }
-
-        .crm-toast .btn-close {
-            font-size: 11px;
+            animation: toastIn .25s ease;
         }
 
         @keyframes toastIn {
             from {
                 opacity: 0;
-                transform: translateY(10px)
+                transform: translateX(30px)
             }
 
             to {
@@ -1223,7 +1219,7 @@
             }
 
             .toast-container {
-                bottom: calc(20px + 60px + env(safe-area-inset-bottom, 0));
+                top: calc(20px + env(safe-area-inset-top, 0));
             }
 
             .main {
@@ -2091,8 +2087,7 @@
         const hashColor = name => COLORS[Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
 
         // Bootstrap alert ko'rinishidagi toast xabarnoma.
-        // O'ng-pastki burchakda chiqadi va 2.6s dan so'ng o'zi yo'qoladi
-        // (yoki foydalanuvchi × tugmasini bossa darhol yopiladi).
+        // O'ng-yuqori burchakda o'ngdan suzib chiqadi va 2.6s dan so'ng o'zi yo'qoladi.
         // type: "success" | "error" | "info"
         function toast(msg, type = "success") {
             const tc = document.getElementById("toast-container");
@@ -2100,16 +2095,14 @@
             const icon = type === "error" ? "fa-circle-exclamation" : (type === "info" ? "fa-circle-info" : "fa-circle-check");
 
             const el = document.createElement("div");
-            el.className = `alert alert-${bsType} alert-dismissible fade show d-flex align-items-center gap-2 crm-toast`;
+            el.className = `alert alert-${bsType} fade show d-flex align-items-center gap-2 crm-toast`;
             el.setAttribute("role", "alert");
-            el.innerHTML = `<i class="fas ${icon}"></i><div class="flex-grow-1">${msg}</div>
-                <button type="button" class="btn-close" aria-label="Close"></button>`;
+            el.innerHTML = `<i class="fas ${icon}"></i><div class="flex-grow-1">${msg}</div>`;
 
             const remove = () => {
                 el.classList.remove("show");
                 setTimeout(() => el.remove(), 200);
             };
-            el.querySelector(".btn-close").addEventListener("click", remove);
 
             tc.appendChild(el);
             setTimeout(remove, 2600);
