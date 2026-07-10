@@ -1987,14 +1987,21 @@
         // mavjud emas — shu sabab bu global patch ularning barchasini
         // qo'shimcha o'zgartirishsiz "to'g'irlab" beradi.
         (function patchFetchWithCredentials() {
-            const originalFetch = window.fetch;
-            window.fetch = function (input, init) {
-                const url = typeof input === "string" ? input : (input && input.url) || "";
-                if (url.startsWith(API_URL)) {
-                    init = init || {};
-                    if (!init.credentials) init.credentials = "include";
+    const originalFetch = window.fetch;
+    window.fetch = function (input, init) {
+        const url = typeof input === "string" ? input : (input && input.url) || "";
+        if (url.startsWith(API_URL)) {
+            init = init || {};
+            if (!init.credentials) init.credentials = "include";
+            const token = localStorage.getItem('crm_auth_token');
+            if (token) {
+                init.headers = new Headers(init.headers || {});
+                if (!init.headers.has('Authorization')) {
+                    init.headers.set('Authorization', `Bearer ${token}`);
                 }
-                return originalFetch(input, init);
+            }
+        }
+        return originalFetch(input, init);
             };
         })();
 
