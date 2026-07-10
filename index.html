@@ -991,14 +991,15 @@
 
         .toast-container {
             position: fixed;
-            top: 20px;
+            bottom: 20px;
             right: 20px;
+            top: auto;
             left: auto;
             transform: none;
             z-index: 1080;
             display: flex;
-            flex-direction: column;
-            gap: 8px;
+            flex-direction: column-reverse;
+            gap: 10px;
             align-items: flex-end;
             max-width: 360px;
         }
@@ -1009,28 +1010,29 @@
             display: flex;
             align-items: center;
             gap: 12px;
-            padding: 12px 14px;
+            padding: 14px 16px;
             font-size: 13px;
-            font-weight: 500;
+            font-weight: 600;
             line-height: 1.4;
             margin-bottom: 0;
-            color: var(--text1);
-            background: var(--bg3);
-            border: 1px solid var(--border2);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, .15);
             border-radius: var(--radius);
-            box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
-            animation: toastIn .25s ease;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
+            animation: toastIn .3s cubic-bezier(.34,1.56,.64,1);
         }
 
         .crm-toast .toast-icon {
-            width: 30px;
-            height: 30px;
-            border-radius: 9px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 13px;
             flex-shrink: 0;
+            background: rgba(255, 255, 255, .2);
+            color: #fff;
         }
 
         .crm-toast .toast-msg {
@@ -1038,36 +1040,21 @@
         }
 
         .crm-toast.toast-success {
-            border-left: 3px solid var(--green);
-        }
-
-        .crm-toast.toast-success .toast-icon {
-            background: rgba(16, 185, 129, .14);
-            color: var(--green);
+            background: var(--green);
         }
 
         .crm-toast.toast-error {
-            border-left: 3px solid var(--red);
-        }
-
-        .crm-toast.toast-error .toast-icon {
-            background: rgba(239, 68, 68, .14);
-            color: var(--red);
+            background: var(--red);
         }
 
         .crm-toast.toast-info {
-            border-left: 3px solid var(--accent);
-        }
-
-        .crm-toast.toast-info .toast-icon {
-            background: rgba(59, 130, 246, .14);
-            color: var(--accent);
+            background: var(--accent);
         }
 
         @keyframes toastIn {
             from {
                 opacity: 0;
-                transform: translateX(30px)
+                transform: translateY(20px) translateX(10px);
             }
 
             to {
@@ -1084,7 +1071,7 @@
 
             to {
                 opacity: 0;
-                transform: translateX(30px)
+                transform: translateY(20px) translateX(10px);
             }
         }
 
@@ -1092,6 +1079,7 @@
             .toast-container {
                 left: 10px;
                 right: 10px;
+                bottom: 10px;
                 max-width: none;
                 align-items: stretch;
             }
@@ -1282,7 +1270,8 @@
             }
 
             .toast-container {
-                top: calc(20px + env(safe-area-inset-top, 0));
+                top: auto;
+                bottom: calc(70px + env(safe-area-inset-bottom, 0));
             }
 
             .main {
@@ -2149,8 +2138,8 @@
         const initials = name => name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
         const hashColor = name => COLORS[Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
 
-        // CRM dizayniga mos toast xabarnoma (dark tema, --green/--red CSS o'zgaruvchilari).
-        // O'ng-yuqori burchakda o'ngdan suzib chiqadi va 2.6s dan so'ng o'zi yo'qoladi.
+        // CRM dizayniga mos toast xabarnoma — to'liq rangli fon (yashil/qizil/ko'k).
+        // O'ng-past burchakda pastdan suzib chiqadi va 2.6s dan so'ng o'zi yo'qoladi.
         // type: "success" (yashil) | "error" (qizil) | "info" (ko'k)
         function toast(msg, type = "success") {
             const tc = document.getElementById("toast-container");
