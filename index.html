@@ -1843,7 +1843,7 @@
                     <option>SPSH</option>
                     <option>Har kuni</option>
                 </select></div>
-            <div class="form-group"><label>Fan</label><input id="m-gcourse" placeholder="Matematika"></div>
+            <div class="form-group"><label>Kurs</label><select id="m-gcourse"></select></div>
             <div class="form-group"><label>O'qituvchi</label><input id="m-gteacher" placeholder="O'qituvchi ismi"></div>
             <div class="form-group"><label>Oylik to'lov (so'm)</label><input id="m-gprice" type="text"
                     class="money-input">
@@ -2868,6 +2868,19 @@
                 ownerGroups.map(g => `<option value="${g.id}" ${selectedGroupId === g.id ? "selected" : ""}>${g.name}</option>`).join("");
         }
 
+        function populateCourseSelect(selectedName = "") {
+            const sel = document.getElementById("m-gcourse");
+            if (!sel) return;
+            if (courses.length === 0) {
+                sel.innerHTML = `<option value="">Kurslar mavjud emas</option>`;
+                return;
+            }
+            sel.innerHTML = courses.map(c =>
+                `<option value="${c.name}" ${c.name === selectedName ? "selected" : ""}>${c.name}</option>`
+            ).join("");
+            if (!selectedName) sel.value = courses[0].name;
+        }
+
         function openGroupModal(id = null) {
             editGroupId = id;
             const g = id ? groups.find(gr => gr.id === id) : null;
@@ -2875,7 +2888,7 @@
             document.getElementById("m-gname").value = g?.name || "";
             document.getElementById("m-gtime").value = g?.time || "15:00";
             document.getElementById("m-gdays").value = g?.days || "DCHJ";
-            document.getElementById("m-gcourse").value = g?.course_type || "";
+            populateCourseSelect(g?.course_type || "");
             document.getElementById("m-gteacher").value = g?.teacher || "";
             document.getElementById("m-gmax").value = g?.max_students || 17;
             setMoneyVal("m-gprice", g?.price || 500000);
@@ -2890,6 +2903,11 @@
                 return toast("Guruh nomi kiritilishi shart!", "error");
             }
 
+            const courseType = document.getElementById("m-gcourse").value;
+            if (!courseType) {
+                return toast("Avval Kurslar bo'limida kurs qo'shing!", "error");
+            }
+
             const maxStudents =
                 parseInt(document.getElementById("m-gmax").value) || 17;
 
@@ -2899,8 +2917,7 @@
                 name,
                 time: document.getElementById("m-gtime").value,
                 days: document.getElementById("m-gdays").value,
-                course_type:
-                    document.getElementById("m-gcourse").value.trim() || "Boshqa",
+                course_type: courseType,
                 teacher:
                     document.getElementById("m-gteacher").value.trim() || "—",
                 price: getMoneyVal("m-gprice"),
