@@ -1015,8 +1015,6 @@
             font-weight: 600;
             line-height: 1.4;
             margin-bottom: 0;
-            color: #fff;
-            border: 1px solid rgba(255, 255, 255, .15);
             border-radius: var(--radius);
             box-shadow: 0 8px 24px rgba(0, 0, 0, .5);
             animation: toastIn .3s cubic-bezier(.34,1.56,.64,1);
@@ -1031,8 +1029,6 @@
             justify-content: center;
             font-size: 13px;
             flex-shrink: 0;
-            background: rgba(255, 255, 255, .2);
-            color: #fff;
         }
 
         .crm-toast .toast-msg {
@@ -1040,15 +1036,36 @@
         }
 
         .crm-toast.toast-success {
-            background: var(--green);
+            background: rgba(16, 185, 129, 0.14);
+            border: 1px solid rgba(16, 185, 129, 0.4);
+            color: var(--green);
+        }
+
+        .crm-toast.toast-success .toast-icon {
+            background: rgba(16, 185, 129, 0.18);
+            color: var(--green);
         }
 
         .crm-toast.toast-error {
-            background: var(--red);
+            background: rgba(239, 68, 68, 0.14);
+            border: 1px solid rgba(239, 68, 68, 0.4);
+            color: var(--red);
+        }
+
+        .crm-toast.toast-error .toast-icon {
+            background: rgba(239, 68, 68, 0.18);
+            color: var(--red);
         }
 
         .crm-toast.toast-info {
-            background: var(--accent);
+            background: rgba(59, 130, 246, 0.14);
+            border: 1px solid rgba(59, 130, 246, 0.4);
+            color: var(--accent);
+        }
+
+        .crm-toast.toast-info .toast-icon {
+            background: rgba(59, 130, 246, 0.18);
+            color: var(--accent);
         }
 
         @keyframes toastIn {
