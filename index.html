@@ -2772,7 +2772,7 @@
                 );
 
                 if (res.ok) {
-                    toast("Guruh tahrirlandi");
+                    toast(`"${name}" guruhi tahrirlandi`);
                 } else {
                     toast("Guruhni tahrirlashda xatolik!", "error");
                 }
@@ -2789,7 +2789,7 @@
                 );
 
                 if (res.ok) {
-                    toast("Yangi guruh qo'shildi");
+                    toast(`"${name}" guruhi qo'shildi`);
                 } else {
                     toast("Guruh qo'shishda xatolik!", "error");
                 }
@@ -2801,8 +2801,9 @@
 
         async function deleteGroup(id) {
             if (!(await showConfirm("Guruh o'chirilsinmi?"))) return;
+            const g = groups.find(x => x.id === id);
             await fetch(`${API_URL}/groups/${id}/`, { method: 'DELETE' });
-            toast("Guruh o'chirildi");
+            toast(`"${g?.name || "Guruh"}" o'chirildi`);
             await loadData();
         }
         async function reloadStudents() {
@@ -3076,7 +3077,7 @@
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    toast("O'quvchi ma'lumotlari yangilandi");
+                    toast(`"${name}" ma'lumotlari yangilandi`);
                 } else {
                     toast("O'quvchini yangilashda xatolik yuz berdi", "error");
                     return;
@@ -3088,7 +3089,7 @@
                     body: JSON.stringify(data)
                 });
                 if (res.ok) {
-                    toast("Yangi o'quvchi qo'shildi");
+                    toast(`"${name}" qo'shildi`);
                 } else {
                     toast("O'quvchi qo'shishda xatolik yuz berdi", "error");
                     return;
@@ -3199,12 +3200,14 @@
         async function confirmMove() {
             const newGid = parseInt(document.getElementById("m-movegroup").value);
             if (newGid) {
+                const s = students.find(st => st.id === moveStudentId);
+                const newGroup = groups.find(g => g.id === newGid);
                 const res = await fetch(`${API_URL}/students/${moveStudentId}/`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ group: newGid })
                 });
-                if (res.ok) toast("O'quvchi yangi guruhga ko'chirildi");
+                if (res.ok) toast(`"${s?.name || "O'quvchi"}" — "${newGroup?.name || "guruh"}"ga ko'chirildi`);
                 closeModal("move-modal");
                 await loadData();
             }
@@ -3755,7 +3758,7 @@
                     body: JSON.stringify(updateData)
                 });
 
-                toast(`${fmtFull(amount)} so'm to'lov qabul qilindi`);
+                toast(`"${student.name}" — ${fmtFull(amount)} so'm to'lov qabul qilindi`);
                 closeModal("payment-modal");
                 await Promise.all([reloadStudents(), reloadPayments()]);
                 render();
@@ -3829,7 +3832,7 @@
             });
 
             if (res.ok) {
-                toast("To'lov tahrirlandi");
+                toast(`"${student?.name || "To'lov"}" to'lovi tahrirlandi`);
                 closeModal("edit-payment-modal");
                 await loadData();
             } else {
@@ -3872,7 +3875,7 @@
             // O'quvchi bo'lsa ham, bo'lmasa ham — to'lovni o'chiramiz
             const res = await fetch(`${API_URL}/payments/${payId}/`, { method: 'DELETE' });
             if (res.ok) {
-                toast(student ? "To'lov o'chirildi va qarzdorlik tiklandi" : "To'lov o'chirildi");
+                toast(student ? `"${student.name}" to'lovi o'chirildi va qarzdorlik tiklandi` : "To'lov o'chirildi");
                 await loadData();
             }
         }
@@ -3939,6 +3942,7 @@
         }
 
         async function restoreStudent(trashId, newGroupId) {
+            const trashName = trash.find(t => t.trashId === trashId)?.name;
             try {
                 const body = newGroupId ? { new_group_id: newGroupId } : {};
                 const res = await fetch(`${API_URL}/trash/${trashId}/restore/`, {
@@ -3947,7 +3951,7 @@
                     body: JSON.stringify(body)
                 });
                 if (res.ok) {
-                    toast("O'quvchi muvaffaqiyatli qaytarildi");
+                    toast(`"${trashName || "O'quvchi"}" muvaffaqiyatli qaytarildi`);
                     closeModal('restore-group-modal');
                     await loadData();
                     return;
@@ -3980,7 +3984,7 @@
                     });
                     if (createRes.ok) {
                         await fetch(`${API_URL}/trash/${trashId}/`, { method: 'DELETE' });
-                        toast("O'quvchi qaytarildi");
+                        toast(`"${studentData.name || "O'quvchi"}" qaytarildi`);
                         await loadData();
                     } else toast("Qaytarishda xatolik!", "error");
                 } else toast("O'quvchi ma'lumoti topilmadi!", "error");
@@ -3999,7 +4003,7 @@
                     });
                     if (createRes.ok) {
                         await fetch(`${API_URL}/trash/${trashId}/`, { method: 'DELETE' });
-                        toast("O'quvchi qaytarildi");
+                        toast(`"${studentData.name || "O'quvchi"}" qaytarildi`);
                         await loadData();
                     } else toast("Qaytarishda xatolik! Server ulanishini tekshiring.", "error");
                 }
@@ -4042,9 +4046,10 @@
 
         async function deleteFromTrash(trashId) {
             if (!(await showConfirm("Bu o'quvchini butunlay o'chirish?"))) return;
+            const trashName = trash.find(t => t.trashId === trashId)?.name;
             const res = await fetch(`${API_URL}/trash/${trashId}/`, { method: 'DELETE' });
             if (res.ok) {
-                toast("O'quvchi butunlay o'chirildi");
+                toast(`"${trashName || "O'quvchi"}" butunlay o'chirildi`);
                 await loadData();
             }
         }
