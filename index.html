@@ -1004,13 +1004,64 @@
         }
 
         .crm-toast {
-            min-width: 260px;
-            max-width: 360px;
-            padding: 10px 14px;
+            min-width: 280px;
+            max-width: 380px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
             font-size: 13px;
+            font-weight: 500;
+            line-height: 1.4;
             margin-bottom: 0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
+            color: var(--text1);
+            background: var(--bg3);
+            border: 1px solid var(--border2);
+            border-radius: var(--radius);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, .35);
             animation: toastIn .25s ease;
+        }
+
+        .crm-toast .toast-icon {
+            width: 30px;
+            height: 30px;
+            border-radius: 9px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 13px;
+            flex-shrink: 0;
+        }
+
+        .crm-toast .toast-msg {
+            flex: 1;
+        }
+
+        .crm-toast.toast-success {
+            border-left: 3px solid var(--green);
+        }
+
+        .crm-toast.toast-success .toast-icon {
+            background: rgba(16, 185, 129, .14);
+            color: var(--green);
+        }
+
+        .crm-toast.toast-error {
+            border-left: 3px solid var(--red);
+        }
+
+        .crm-toast.toast-error .toast-icon {
+            background: rgba(239, 68, 68, .14);
+            color: var(--red);
+        }
+
+        .crm-toast.toast-info {
+            border-left: 3px solid var(--accent);
+        }
+
+        .crm-toast.toast-info .toast-icon {
+            background: rgba(59, 130, 246, .14);
+            color: var(--accent);
         }
 
         @keyframes toastIn {
@@ -1022,6 +1073,18 @@
             to {
                 opacity: 1;
                 transform: none
+            }
+        }
+
+        @keyframes toastOut {
+            from {
+                opacity: 1;
+                transform: none
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(30px)
             }
         }
 
@@ -2086,26 +2149,31 @@
         const initials = name => name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
         const hashColor = name => COLORS[Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
 
-        // Bootstrap alert ko'rinishidagi toast xabarnoma.
+        // CRM dizayniga mos toast xabarnoma (dark tema, --green/--red CSS o'zgaruvchilari).
         // O'ng-yuqori burchakda o'ngdan suzib chiqadi va 2.6s dan so'ng o'zi yo'qoladi.
-        // type: "success" | "error" | "info"
+        // type: "success" (yashil) | "error" (qizil) | "info" (ko'k)
         function toast(msg, type = "success") {
             const tc = document.getElementById("toast-container");
-            const bsType = type === "error" ? "danger" : (type === "info" ? "info" : "success");
+            const cls = type === "error" ? "toast-error" : (type === "info" ? "toast-info" : "toast-success");
             const icon = type === "error" ? "fa-circle-exclamation" : (type === "info" ? "fa-circle-info" : "fa-circle-check");
 
             const el = document.createElement("div");
-            el.className = `alert alert-${bsType} fade show d-flex align-items-center gap-2 crm-toast`;
+            el.className = `crm-toast ${cls}`;
             el.setAttribute("role", "alert");
-            el.innerHTML = `<i class="fas ${icon}"></i><div class="flex-grow-1">${msg}</div>`;
+            el.innerHTML = `
+                <div class="toast-icon"><i class="fas ${icon}"></i></div>
+                <div class="toast-msg">${msg}</div>
+            `;
 
             const remove = () => {
-                el.classList.remove("show");
+                el.style.animation = "toastOut .2s ease forwards";
                 setTimeout(() => el.remove(), 200);
             };
 
             tc.appendChild(el);
-            setTimeout(remove, 2600);
+            const timer = setTimeout(remove, 2600);
+            el.addEventListener("mouseenter", () => clearTimeout(timer));
+            el.addEventListener("mouseleave", () => setTimeout(remove, 1200));
         }
 
         function initMoneyInputs() {
@@ -3001,14 +3069,24 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                if (res.ok) toast("O'quvchi ma'lumotlari yangilandi");
+                if (res.ok) {
+                    toast("O'quvchi ma'lumotlari yangilandi");
+                } else {
+                    toast("O'quvchini yangilashda xatolik yuz berdi", "error");
+                    return;
+                }
             } else {
                 const res = await fetch(`${API_URL}/students/`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(data)
                 });
-                if (res.ok) toast("Yangi o'quvchi qo'shildi");
+                if (res.ok) {
+                    toast("Yangi o'quvchi qo'shildi");
+                } else {
+                    toast("O'quvchi qo'shishda xatolik yuz berdi", "error");
+                    return;
+                }
             }
             closeModal("student-modal");
             await reloadStudents();
@@ -3090,13 +3168,18 @@
                 from_group: grp?.name || "Noma'lum",
                 created_at: new Date().toISOString()
             };
-            await fetch(`${API_URL}/trash/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(trashData)
-            });
-            await fetch(`${API_URL}/students/${id}/`, { method: 'DELETE' });
-            toast(`"${s.name}" o'chirildi (3 kundan keyin avtomatik tozalanadi)`);
+            try {
+                await fetch(`${API_URL}/trash/`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(trashData)
+                });
+                const delRes = await fetch(`${API_URL}/students/${id}/`, { method: 'DELETE' });
+                if (!delRes.ok) throw new Error("delete failed");
+                toast(`"${s.name}" o'chirildi (3 kundan keyin avtomatik tozalanadi)`);
+            } catch (e) {
+                toast(`"${s.name}" ni o'chirishda xatolik yuz berdi`, "error");
+            }
             await loadData();
         }
 
