@@ -5,6 +5,28 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
+    <script>
+    (function () {
+      // 1) Klaviatura orqali ochishni bloklash
+      document.addEventListener('keydown', function (e) {
+        // F12
+        if (e.keyCode === 123) { e.preventDefault(); return false; }
+        // Ctrl+Shift+I / Ctrl+Shift+J / Ctrl+Shift+C
+        if (e.ctrlKey && e.shiftKey && ['I','J','C'].includes(e.key.toUpperCase())) {
+          e.preventDefault(); return false;
+        }
+        // Ctrl+U (view-source)
+        if (e.ctrlKey && e.key.toUpperCase() === 'U') {
+          e.preventDefault(); return false;
+        }
+      }, true); // capture: true — event bubbling emas, eng tepadan ushlaydi
+
+      // 2) O'ng klik context menyusini o'chirish (ixtiyoriy)
+      document.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+      }, true);
+    })();
+  </script>
 
     <head>
         <title>Ferdinant Edu CRM</title>
