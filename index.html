@@ -2724,7 +2724,7 @@
         }
 
         async function deleteGroup(id) {
-            if (!confirm("Guruh o'chirilsinmi?")) return;
+            if (!(await showConfirm("Guruh o'chirilsinmi?"))) return;
             await fetch(`${API_URL}/groups/${id}/`, { method: 'DELETE' });
             toast("Guruh o'chirildi");
             await loadData();
@@ -3384,7 +3384,7 @@
             const rows = getFilteredHistoryPayments();
 
             if (!rows.length) {
-                alert("Bu davr uchun to'lovlar topilmadi");
+                showAlert("Bu davr uchun to'lovlar topilmadi", "info");
                 return;
             }
 
@@ -3747,7 +3747,7 @@
         }
 
         async function deletePayment(payId) {
-            if (!confirm("To'lovni o'chirish qarzdorlikni qayta tiklaydi. Davom etilsinmi?")) return;
+            if (!(await showConfirm("To'lovni o'chirish qarzdorlikni qayta tiklaydi. Davom etilsinmi?"))) return;
 
             const payment = payments.find(p => p.id === payId);
             if (!payment) return toast("To'lov topilmadi!", "error");
@@ -3940,7 +3940,7 @@
         }
 
         async function clearTrash() {
-            if (!confirm("Barcha o'chirilganlarni butunlay o'chirish?")) return;
+            if (!(await showConfirm("Barcha o'chirilganlarni butunlay o'chirish?"))) return;
             const trashList = await fetch(`${API_URL}/trash/`).then(r => r.json());
             for (let t of trashList) {
                 await fetch(`${API_URL}/trash/${t.id}/`, { method: 'DELETE' });
@@ -3950,7 +3950,7 @@
         }
 
         async function deleteFromTrash(trashId) {
-            if (!confirm("Bu o'quvchini butunlay o'chirish?")) return;
+            if (!(await showConfirm("Bu o'quvchini butunlay o'chirish?"))) return;
             const res = await fetch(`${API_URL}/trash/${trashId}/`, { method: 'DELETE' });
             if (res.ok) {
                 toast("O'quvchi butunlay o'chirildi");
@@ -4392,10 +4392,10 @@
         }
 
         // Testni ro'yxatdan va localStorage'dan o'chirish
-        function deleteTest(id) {
+        async function deleteTest(id) {
             const test = testsList.find(t => t.id === id);
             if (!test) return;
-            if (!confirm(`"${test.name}" testini o'chirmoqchimisiz?`)) return;
+            if (!(await showConfirm(`"${test.name}" testini o'chirmoqchimisiz?`))) return;
             testsList = testsList.filter(t => t.id !== id);
             saveTests();
             renderTestsGrid();

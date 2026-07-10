@@ -254,6 +254,56 @@ function showAlert(message, type = 'info', title = null) {
     });
 }
 
+// ===================== TASDIQLASH MODALI (window.confirm() o'rniga) =====================
+function ensureConfirmModal() {
+    if (document.getElementById('ag-confirm-modal')) return;
+    const modal = document.createElement('div');
+    modal.id = 'ag-confirm-modal';
+    modal.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,0.6);display:none;align-items:center;justify-content:center;font-family:\'Geist\',-apple-system,sans-serif;padding:16px;';
+    modal.innerHTML = `
+        <div style="background:rgba(17,24,39,0.97);border:1px solid rgba(255,255,255,0.08);border-radius:20px;padding:28px;width:92%;max-width:360px;box-shadow:0 25px 60px rgba(0,0,0,0.6);text-align:center;animation:authIn .2s ease;">
+            <div style="width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:22px;background:rgba(239,68,68,0.1);color:#ef4444;"><i class="fas fa-triangle-exclamation"></i></div>
+            <div id="ag-confirm-title" style="font-size:16px;font-weight:700;color:#f1f5f9;margin-bottom:8px;">Tasdiqlash</div>
+            <div id="ag-confirm-message" style="font-size:13px;color:#94a3b8;line-height:1.5;margin-bottom:20px;white-space:pre-line;"></div>
+            <div style="display:flex;gap:10px;">
+                <button id="ag-confirm-cancel" style="flex:1;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);color:#e2e8f0;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Geist',-apple-system,sans-serif;">Bekor</button>
+                <button id="ag-confirm-ok" style="flex:1;background:#ef4444;border:1px solid #ef4444;color:#fff;border-radius:10px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Geist',-apple-system,sans-serif;">Tasdiqlash</button>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+}
+
+function closeConfirmModal() {
+    const modal = document.getElementById('ag-confirm-modal');
+    if (modal) modal.style.display = 'none';
+}
+
+// Universal tasdiqlash modali: window.confirm() o'rniga ishlatiladi.
+// Promise<boolean> qaytaradi: true - "Tasdiqlash" bosildi, false - bekor qilindi.
+function showConfirm(message, title = 'Tasdiqlash') {
+    ensureConfirmModal();
+    const modal = document.getElementById('ag-confirm-modal');
+    document.getElementById('ag-confirm-title').textContent = title;
+    document.getElementById('ag-confirm-message').textContent = message;
+
+    const okBtn = document.getElementById('ag-confirm-ok');
+    const cancelBtn = document.getElementById('ag-confirm-cancel');
+
+    return new Promise((resolve) => {
+        const newOk = okBtn.cloneNode(true);
+        okBtn.parentNode.replaceChild(newOk, okBtn);
+        const newCancel = cancelBtn.cloneNode(true);
+        cancelBtn.parentNode.replaceChild(newCancel, cancelBtn);
+
+        const finish = (result) => { closeConfirmModal(); resolve(result); };
+        newOk.onclick = () => finish(true);
+        newCancel.onclick = () => finish(false);
+        modal.addEventListener('click', (e) => { if (e.target === modal) finish(false); }, { once: true });
+        modal.style.display = 'flex';
+    });
+}
+
 // ===================== API CALL =====================
 async function apiCall(endpoint, method = 'GET', body = null) {
     const headers = { 'Content-Type': 'application/json' };
@@ -264,6 +314,12 @@ async function apiCall(endpoint, method = 'GET', body = null) {
     const res = await fetch(`${API_BASE}${endpoint}`, opts);
     const data = await res.json();
     return { ok: res.ok, status: res.status, data };
+}
+
+// Chiqish tugmalari uchun: avval tasdiqlash modalini ko'rsatadi, "Tasdiqlash"
+// bosilsa logout() chaqiradi. Inline onclick ichida ishlatish uchun.
+async function confirmLogout() {
+    if (await showConfirm('Tizimdan chiqasizmi?')) logout();
 }
 
 // ===================== LOGOUT =====================
@@ -797,7 +853,7 @@ function addTopbarButtons() {
             <button class="dd-profile-item" onclick="closeAvatarDropdown();navigateToProfile()"><i class="fas fa-user-circle"></i> Profil</button>
             <button class="dd-profile-item" onclick="closeAvatarDropdown();navigateToProfile()"><i class="fas fa-cog"></i> Sozlamalar</button>
             <div style="border-top:1px solid rgba(255,255,255,0.06);margin:4px 0"></div>
-            <button class="dd-profile-item red" onclick="closeAvatarDropdown();if(confirm('Tizimdan chiqasizmi?'))logout()"><i class="fas fa-sign-out-alt"></i> Chiqish</button>
+            <button class="dd-profile-item red" onclick="closeAvatarDropdown();confirmLogout()"><i class="fas fa-sign-out-alt"></i> Chiqish</button>
         </div>
     `;
     avatarWrap.querySelector('#topbar-avatar-inner').onclick = (e) => { e.stopPropagation(); toggleAvatarDropdown(); };
@@ -917,7 +973,7 @@ function renderProfilePage() {
             <div class="profile-section" style="border-color:rgba(239,68,68,0.15)">
                 <div class="profile-section-title" style="color:#ef4444">Tizimdan chiqish</div>
                 <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Tizimdan chiqsangiz, qayta kirishda login va parol so'raladi.</p>
-                <button class="pf-btn" onclick="if(confirm('Tizimdan chiqasizmi?'))logout()" style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);width:auto;padding:10px 24px;" onmouseover="this.style.background='#ef4444';this.style.color='#fff'" onmouseout="this.style.background='rgba(239,68,68,0.1)';this.style.color='#ef4444'">
+                <button class="pf-btn" onclick="confirmLogout()" style="background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);width:auto;padding:10px 24px;" onmouseover="this.style.background='#ef4444';this.style.color='#fff'" onmouseout="this.style.background='rgba(239,68,68,0.1)';this.style.color='#ef4444'">
                     <i class="fas fa-sign-out-alt"></i> Chiqish
                 </button>
             </div>
@@ -943,7 +999,7 @@ async function handleAvatarUpload(event) {
 }
 
 async function deleteAvatar() {
-    if (!confirm("Profil rasmini o'chirasizmi?")) return;
+    if (!(await showConfirm("Profil rasmini o'chirasizmi?"))) return;
     const res = await apiCall('/auth/profile/', 'PUT', { avatar: '' });
     if (res.ok) {
         setCurrentUserData(res.data);
@@ -1042,7 +1098,7 @@ async function addNewUserFromPage() {
 }
 
 async function deleteUserFromPage(userId) {
-    if (!confirm("Bu foydalanuvchini o'chirasizmi?")) return;
+    if (!(await showConfirm("Bu foydalanuvchini o'chirasizmi?"))) return;
     const res = await apiCall(`/auth/users/${userId}/`, 'DELETE');
     if (res.ok) loadUsersListPage();
     else await showAlert(res.data.error || 'Xatolik yuz berdi!', 'error');
