@@ -992,27 +992,29 @@
         .toast-container {
             position: fixed;
             bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 1000;
+            right: 20px;
+            left: auto;
+            transform: none;
+            z-index: 1080;
             display: flex;
             flex-direction: column;
             gap: 8px;
-            align-items: center
+            align-items: flex-end;
+            max-width: 360px;
         }
 
-        .toast {
-            background: var(--bg3);
-            border: 1px solid var(--border2);
-            border-radius: 10px;
-            padding: 10px 18px;
+        .crm-toast {
+            min-width: 260px;
+            max-width: 360px;
+            padding: 10px 14px;
             font-size: 13px;
-            color: var(--text1);
+            margin-bottom: 0;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
             animation: toastIn .2s ease;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, .4);
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        }
+
+        .crm-toast .btn-close {
+            font-size: 11px;
         }
 
         @keyframes toastIn {
@@ -1027,24 +1029,18 @@
             }
         }
 
-        .toast.success {
-            border-color: rgba(16, 185, 129, .3)
-        }
+        @media (max-width: 520px) {
+            .toast-container {
+                left: 10px;
+                right: 10px;
+                max-width: none;
+                align-items: stretch;
+            }
 
-        .toast.error {
-            border-color: rgba(239, 68, 68, .3)
-        }
-
-        .toast i {
-            font-size: 14px
-        }
-
-        .toast.success i {
-            color: var(--green)
-        }
-
-        .toast.error i {
-            color: var(--red)
+            .crm-toast {
+                min-width: 0;
+                max-width: none;
+            }
         }
 
         .detail-header {
@@ -2094,16 +2090,29 @@
         const initials = name => name.split(" ").slice(0, 2).map(w => w[0]).join("").toUpperCase();
         const hashColor = name => COLORS[Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % COLORS.length];
 
+        // Bootstrap alert ko'rinishidagi toast xabarnoma.
+        // O'ng-pastki burchakda chiqadi va 2.6s dan so'ng o'zi yo'qoladi
+        // (yoki foydalanuvchi × tugmasini bossa darhol yopiladi).
+        // type: "success" | "error" | "info"
         function toast(msg, type = "success") {
             const tc = document.getElementById("toast-container");
+            const bsType = type === "error" ? "danger" : (type === "info" ? "info" : "success");
+            const icon = type === "error" ? "fa-circle-exclamation" : (type === "info" ? "fa-circle-info" : "fa-circle-check");
+
             const el = document.createElement("div");
-            el.className = `toast ${type}`;
-            el.innerHTML = `<i class="fas ${type === "success" ? "fa-check-circle" : "fa-exclamation-circle"}"></i>${msg}`;
+            el.className = `alert alert-${bsType} alert-dismissible fade show d-flex align-items-center gap-2 crm-toast`;
+            el.setAttribute("role", "alert");
+            el.innerHTML = `<i class="fas ${icon}"></i><div class="flex-grow-1">${msg}</div>
+                <button type="button" class="btn-close" aria-label="Close"></button>`;
+
+            const remove = () => {
+                el.classList.remove("show");
+                setTimeout(() => el.remove(), 200);
+            };
+            el.querySelector(".btn-close").addEventListener("click", remove);
+
             tc.appendChild(el);
-            setTimeout(() => {
-                el.style.opacity = "0";
-                setTimeout(() => el.remove(), 250);
-            }, 2600);
+            setTimeout(remove, 2600);
         }
 
         function initMoneyInputs() {
